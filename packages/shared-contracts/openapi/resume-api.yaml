@@ -1,0 +1,246 @@
+openapi: 3.1.0
+info:
+  title: Jobocate Resume API
+  version: 0.1.0
+  description: |
+    Candidate resume upload, parser status, and recruiter-side download.
+    Storage path: `s3://{bucket}/tenants/{tenant_id}/candidates/{candidate_id}/resumes/{resume_id}/{version}.{ext}`.
+    Owned primarily by `candidate-service` for metadata; upload ingestion via
+    `resume-ingestion-service` (POST /v1/resumes/ingest, internal).
+
+servers:
+  - url: http://localhost:8083
+    description: Local (candidate-service)
+
+security:
+  - bearerJwt: []
+
+paths:
+  /api/v1/me/resumes/upload-url:
+    post:
+      summary: Get a pre-signed S3 PUT URL for direct upload
+      operationId: getResumeUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [filename, mime_type, size_bytes]
+              properties:
+                filename: { type: string }
+                mime_type:
+                  type: string
+                  enum:
+                    - application/pdf
+                    - application/msword
+                    - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+                size_bytes: { type: integer, minimum: 1, maximum: 10485760 }
+      responses:
+        '201':
+          description: Upload URL issued.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadUrl' }
+        '413': { description: File too large. }
+        '415': { description: Unsupported content type. }
+
+  /api/v1/me/resumes/{id}/finalize:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Finalize after S3 PUT — kicks parser
+      operationId: finalizeResume
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version_label: { type: string }
+                set_default: { type: boolean }
+      responses:
+        '200':
+          description: Finalized; parser triggered.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Resume' }
+        '409': { $ref: './_common.yaml#/components/responses/Conflict' }
+
+  /api/v1/me/resumes:
+    get:
+      summary: List own resumes
+      operationId: listMyResumes
+      responses:
+        '200':
+          description: Resumes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Resume' }
+    post:
+      summary: Multipart upload (alt to pre-signed URL)
+      operationId: uploadResumeMultipart
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                version_label: { type: string }
+                set_default: { type: boolean }
+      responses:
+        '201':
+          description: Resume created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Resume' }
+
+  /api/v1/me/resumes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Resume metadata + parser status
+      operationId: getMyResume
+      responses:
+        '200':
+          description: Detail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Resume' }
+    patch:
+      summary: Update label or set as default
+      operationId: updateMyResume
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version_label: { type: string }
+                is_default: { type: boolean }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Resume' }
+    delete:
+      summary: Delete resume (only when not referenced by an application)
+      operationId: deleteMyResume
+      responses:
+        '204': { description: Deleted. }
+        '409': { description: 'Conflict: referenced by an application.' }
+
+  /api/v1/me/resumes/{id}/download-url:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Signed GET URL (own resume)
+      operationId: getMyResumeDownloadUrl
+      responses:
+        '200':
+          description: Signed URL (TTL ≤ 5 min).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SignedDownload' }
+
+  /api/v1/applications/{id}/resume/download-url:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Recruiter download of the resume used in an application (audited as RESUME_ACCESSED)
+      operationId: getApplicationResumeDownloadUrl
+      responses:
+        '200':
+          description: Signed URL.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SignedDownload' }
+        '403': { $ref: './_common.yaml#/components/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/components/responses/NotFound' }
+
+  /api/v1/me/resumes/{id}/parsed-fields/apply:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Apply parser-extracted fields into structured profile
+      operationId: applyParsedFields
+      responses:
+        '200':
+          description: Applied; updated profile returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 'See candidate-api.yaml#/components/schemas/CandidateProfile'
+                additionalProperties: true
+
+components:
+  securitySchemes:
+    bearerJwt: { $ref: './_common.yaml#/components/securitySchemes/bearerJwt' }
+
+  schemas:
+    Resume:
+      allOf:
+        - { $ref: './_common.yaml#/components/schemas/Audit' }
+        - type: object
+          required: [id, candidate_profile_id, original_filename, mime_type, parser_status]
+          properties:
+            id: { type: string, format: uuid }
+            candidate_profile_id: { type: string, format: uuid }
+            tenant_id: { type: ['string', 'null'], format: uuid }
+            original_filename: { type: string }
+            mime_type: { type: string }
+            size_bytes: { type: integer }
+            version_label: { type: ['string', 'null'] }
+            is_default: { type: boolean }
+            parser_status: { type: string, enum: [PENDING, PARSED, FAILED] }
+            parsed_at: { type: ['string', 'null'], format: date-time }
+            parser_error: { type: ['string', 'null'] }
+
+    UploadUrl:
+      type: object
+      required: [resume_id, upload_url, s3_key, expires_at]
+      properties:
+        resume_id: { type: string, format: uuid }
+        upload_url: { type: string, format: uri }
+        s3_key: { type: string }
+        expires_at: { type: string, format: date-time }
+        required_headers:
+          type: object
+          additionalProperties: { type: string }
+
+    SignedDownload:
+      type: object
+      required: [url, expires_at]
+      properties:
+        url: { type: string, format: uri }
+        expires_at: { type: string, format: date-time }

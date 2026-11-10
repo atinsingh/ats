@@ -1,0 +1,476 @@
+openapi: 3.1.0
+info:
+  title: Jobocate Candidate API
+  version: 0.1.0
+  description: |
+    Candidate self-service (own profile, work/edu/cert, consents, saved
+    items) plus recruiter-side candidate views (resume DB list / detail).
+    Owned by `candidate-service`.
+
+servers:
+  - url: http://localhost:8083
+    description: Local
+
+security:
+  - bearerJwt: []
+
+paths:
+  /api/v1/me/profile:
+    get:
+      summary: Own candidate profile
+      operationId: getMyProfile
+      responses:
+        '200':
+          description: Profile.
+          headers:
+            ETag: { $ref: './_common.yaml#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CandidateProfile' }
+    put:
+      summary: Replace own profile
+      operationId: replaceMyProfile
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IfMatchHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CandidateProfileWrite' }
+      responses:
+        '200':
+          description: Updated.
+          headers:
+            ETag: { $ref: './_common.yaml#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CandidateProfile' }
+        '409': { $ref: './_common.yaml#/components/responses/Conflict' }
+
+  /api/v1/me/work-experiences:
+    get:
+      summary: List own work experiences
+      operationId: listMyWorkExperiences
+      responses:
+        '200':
+          description: List.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WorkExperience' }
+    post:
+      summary: Add work experience
+      operationId: addMyWorkExperience
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorkExperienceWrite' }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkExperience' }
+
+  /api/v1/me/work-experiences/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Update work experience
+      operationId: updateMyWorkExperience
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorkExperienceWrite' }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkExperience' }
+    delete:
+      summary: Delete work experience
+      operationId: deleteMyWorkExperience
+      responses:
+        '204': { description: Deleted. }
+
+  /api/v1/me/educations:
+    get:
+      summary: List own educations
+      operationId: listMyEducations
+      responses:
+        '200':
+          description: List.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Education' }
+    post:
+      summary: Add education
+      operationId: addMyEducation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EducationWrite' }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Education' }
+
+  /api/v1/me/certifications:
+    get:
+      summary: List own certifications
+      operationId: listMyCertifications
+      responses:
+        '200':
+          description: List.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Certification' }
+    post:
+      summary: Add certification
+      operationId: addMyCertification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CertificationWrite' }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Certification' }
+
+  /api/v1/me/consents:
+    get:
+      summary: List own consent records (append-only history)
+      operationId: listMyConsents
+      responses:
+        '200':
+          description: Consents.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ConsentRecord' }
+    post:
+      summary: Grant or revoke a consent (creates a new record)
+      operationId: setMyConsent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConsentWrite' }
+      responses:
+        '201':
+          description: Recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConsentRecord' }
+
+  /api/v1/me/saved-jobs:
+    get:
+      summary: List saved jobs
+      operationId: listMySavedJobs
+      responses:
+        '200':
+          description: Saved jobs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    job_id: { type: string, format: uuid }
+                    saved_at: { type: string, format: date-time }
+    post:
+      summary: Save a job
+      operationId: saveJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [job_id]
+              properties:
+                job_id: { type: string, format: uuid }
+      responses:
+        '204': { description: Saved. }
+
+  /api/v1/me/saved-jobs/{job_id}:
+    parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      summary: Unsave a job
+      operationId: unsaveJob
+      responses:
+        '204': { description: Removed. }
+
+  /api/v1/me/data-export:
+    post:
+      summary: Initiate DSAR export of own data
+      operationId: requestDataExport
+      responses:
+        '202':
+          description: Accepted; ticket id returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket_id: { type: string, format: uuid }
+                  estimated_ready_at: { type: string, format: date-time }
+
+  /api/v1/me/data-deletion:
+    post:
+      summary: Initiate DSAR deletion of own data
+      operationId: requestDataDeletion
+      responses:
+        '202':
+          description: Accepted; processed within SLA.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket_id: { type: string, format: uuid }
+
+  /api/v1/candidates:
+    get:
+      summary: Recruiter-side candidate list (resume DB)
+      operationId: listCandidatesForRecruiter
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+        - $ref: './_common.yaml#/components/parameters/QueryParam'
+        - name: skill
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: country
+          in: query
+          schema: { type: string }
+        - name: availability
+          in: query
+          schema: { $ref: './_common.yaml#/components/schemas/Availability' }
+      responses:
+        '200':
+          description: Paged candidate list (consent + visibility filtered).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/CandidateProfilePublic' }
+        '403': { $ref: './_common.yaml#/components/responses/Forbidden' }
+
+  /api/v1/candidates/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Recruiter-side candidate detail
+      operationId: getCandidateForRecruiter
+      responses:
+        '200':
+          description: Detail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CandidateProfilePublic' }
+        '404': { $ref: './_common.yaml#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerJwt: { $ref: './_common.yaml#/components/securitySchemes/bearerJwt' }
+
+  schemas:
+    CandidateProfile:
+      allOf:
+        - { $ref: './_common.yaml#/components/schemas/Audit' }
+        - type: object
+          required: [id, full_name, email, profile_visibility, consent_searchable]
+          properties:
+            id: { type: string, format: uuid }
+            user_id: { type: ['string', 'null'], format: uuid }
+            tenant_id: { type: ['string', 'null'], format: uuid }
+            full_name: { type: string }
+            headline: { type: ['string', 'null'] }
+            email: { type: string, format: email }
+            phone: { type: ['string', 'null'] }
+            location_city: { type: ['string', 'null'] }
+            location_region: { type: ['string', 'null'] }
+            location_country: { type: ['string', 'null'] }
+            summary: { type: ['string', 'null'] }
+            desired_role: { type: ['string', 'null'] }
+            salary_expectation_min_cents: { type: ['integer', 'null'] }
+            salary_expectation_max_cents: { type: ['integer', 'null'] }
+            currency_code: { type: ['string', 'null'] }
+            availability: { $ref: './_common.yaml#/components/schemas/Availability' }
+            work_authorization: { type: ['string', 'null'] }
+            links:
+              type: object
+              additionalProperties: { type: string }
+            profile_visibility: { $ref: './_common.yaml#/components/schemas/ProfileVisibility' }
+            consent_searchable: { type: boolean }
+
+    CandidateProfileWrite:
+      type: object
+      required: [full_name, email]
+      properties:
+        full_name: { type: string }
+        headline: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        location_city: { type: string }
+        location_region: { type: string }
+        location_country: { type: string }
+        summary: { type: string }
+        desired_role: { type: string }
+        salary_expectation_min_cents: { type: integer }
+        salary_expectation_max_cents: { type: integer }
+        currency_code: { type: string }
+        availability: { $ref: './_common.yaml#/components/schemas/Availability' }
+        work_authorization: { type: string }
+        links:
+          type: object
+          additionalProperties: { type: string }
+        profile_visibility: { $ref: './_common.yaml#/components/schemas/ProfileVisibility' }
+
+    CandidateProfilePublic:
+      type: object
+      required: [id, full_name, profile_visibility]
+      properties:
+        id: { type: string, format: uuid }
+        full_name: { type: string }
+        headline: { type: ['string', 'null'] }
+        location_city: { type: ['string', 'null'] }
+        location_region: { type: ['string', 'null'] }
+        location_country: { type: ['string', 'null'] }
+        skills:
+          type: array
+          items: { type: string }
+        total_experience_years: { type: ['number', 'null'] }
+        availability: { $ref: './_common.yaml#/components/schemas/Availability' }
+        profile_visibility: { $ref: './_common.yaml#/components/schemas/ProfileVisibility' }
+
+    WorkExperience:
+      type: object
+      required: [id, company_name, title, started_at]
+      properties:
+        id: { type: string, format: uuid }
+        company_name: { type: string }
+        title: { type: string }
+        started_at: { type: string, format: date }
+        ended_at: { type: ['string', 'null'], format: date }
+        current: { type: boolean }
+        description: { type: ['string', 'null'] }
+        skills:
+          type: array
+          items: { type: string }
+
+    WorkExperienceWrite:
+      type: object
+      required: [company_name, title, started_at]
+      properties:
+        company_name: { type: string }
+        title: { type: string }
+        started_at: { type: string, format: date }
+        ended_at: { type: ['string', 'null'], format: date }
+        current: { type: boolean }
+        description: { type: string }
+        skills:
+          type: array
+          items: { type: string }
+
+    Education:
+      type: object
+      required: [id, institution]
+      properties:
+        id: { type: string, format: uuid }
+        institution: { type: string }
+        degree: { type: ['string', 'null'] }
+        field_of_study: { type: ['string', 'null'] }
+        started_at: { type: ['string', 'null'], format: date }
+        ended_at: { type: ['string', 'null'], format: date }
+        gpa: { type: ['number', 'null'] }
+
+    EducationWrite:
+      type: object
+      required: [institution]
+      properties:
+        institution: { type: string }
+        degree: { type: string }
+        field_of_study: { type: string }
+        started_at: { type: string, format: date }
+        ended_at: { type: ['string', 'null'], format: date }
+        gpa: { type: number }
+
+    Certification:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        issuer: { type: ['string', 'null'] }
+        issued_at: { type: ['string', 'null'], format: date }
+        expires_at: { type: ['string', 'null'], format: date }
+        credential_url: { type: ['string', 'null'], format: uri }
+
+    CertificationWrite:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        issuer: { type: string }
+        issued_at: { type: string, format: date }
+        expires_at: { type: ['string', 'null'], format: date }
+        credential_url: { type: string, format: uri }
+
+    ConsentRecord:
+      type: object
+      required: [id, consent_kind, consent_value, recorded_at]
+      properties:
+        id: { type: string, format: uuid }
+        consent_kind:
+          type: string
+          enum: [SEARCHABLE, AI_TOOLS, MARKETING, DATA_PROCESSING_TOS]
+        consent_value: { type: boolean }
+        policy_version: { type: ['string', 'null'] }
+        source: { type: ['string', 'null'] }
+        tenant_id: { type: ['string', 'null'], format: uuid }
+        recorded_at: { type: string, format: date-time }
+
+    ConsentWrite:
+      type: object
+      required: [consent_kind, consent_value]
+      properties:
+        consent_kind:
+          type: string
+          enum: [SEARCHABLE, AI_TOOLS, MARKETING, DATA_PROCESSING_TOS]
+        consent_value: { type: boolean }
+        policy_version: { type: string }
+        source: { type: string }
+        tenant_id: { type: string, format: uuid }

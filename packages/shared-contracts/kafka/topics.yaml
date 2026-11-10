@@ -1,0 +1,114 @@
+# Canonical Kafka topic registry. Producers and consumers must reference
+# topics by these logical names (overridden via env at deploy time). CI
+# contract checks should fail builds that drift from this list.
+#
+# Naming convention: jobocate.<bounded-context>.<event-type>[.DLT]
+#
+# Event payloads:
+#   - job.events         → see services-java/job-service event publisher.
+#                          Payload schema = job_event.payload.schema_version
+#                          (currently "v1"). Used by search-orchestrator,
+#                          notification (POST-MVP).
+#   - application.events → see services-java/application-service. Used by
+#                          notification, analytics, search-orchestrator
+#                          (candidate index when consent given).
+#   - resume.raw         → emitted by candidate-service after upload finalize.
+#                          Consumed by resume-parser-worker.
+#   - resume.parsed      → emitted by resume-parser-worker. Consumed by
+#                          candidate-service (review queue) + embedding-worker.
+#   - embedding.request  → request from any service that wants an embedding.
+#   - embedding.ready    → result topic from embedding-worker.
+#   - notification.events → emitted by notification-service after delivery
+#                          attempts (success/failure) for analytics.
+#   - analytics.events   → catch-all telemetry stream consumed by
+#                          analytics-event-collector.
+
+topics:
+  job_events: jobocate.job.events
+  job_events_dlt: jobocate.job.events.DLT
+  application_events: jobocate.application.events
+  application_events_dlt: jobocate.application.events.DLT
+  resume_raw: jobocate.resume.raw
+  resume_parsed: jobocate.resume.parsed
+  embedding_request: jobocate.embedding.request
+  embedding_ready: jobocate.embedding.ready
+  notification_events: jobocate.notification.events
+  analytics_events: jobocate.analytics.events
+
+consumer_groups:
+  notification: jobocate-notification
+  search_orchestrator: jobocate-search-orchestrator
+  index_builder: jobocate-index-builder
+  resume_parser: jobocate-resume-parser
+  embedding_worker: jobocate-embedding-worker
+  analytics_collector: jobocate-analytics-collector
+
+# Per-topic settings recommended for production. Local dev (Redpanda) ignores
+# replication_factor and uses defaults.
+defaults:
+  partitions: 6
+  replication_factor: 3
+  cleanup_policy: delete
+  retention_ms: 1209600000  # 14 days
+  min_insync_replicas: 2
+
+# Routing rules — which producers send to which topics.
+producers:
+  jobocate.job.events:
+    - service: job-service
+      mechanism: outbox
+  jobocate.application.events:
+    - service: application-service
+      mechanism: outbox
+  jobocate.resume.raw:
+    - service: candidate-service
+      mechanism: outbox
+  jobocate.resume.parsed:
+    - service: resume-parser-worker
+      mechanism: direct
+  jobocate.embedding.request:
+    - service: candidate-service
+      mechanism: outbox
+    - service: job-service
+      mechanism: outbox
+  jobocate.embedding.ready:
+    - service: embedding-worker
+      mechanism: direct
+  jobocate.notification.events:
+    - service: notification-service
+      mechanism: direct
+  jobocate.analytics.events:
+    - service: any
+      mechanism: direct
+
+# Routing rules — which consumers subscribe to which topics.
+consumers:
+  jobocate.job.events:
+    - service: search-orchestrator-service
+      group: jobocate-search-orchestrator
+      action: project_to_search_index
+      retry_topic: jobocate.job.events.retry
+      dlt_topic: jobocate.job.events.DLT
+  jobocate.application.events:
+    - service: notification-service
+      group: jobocate-notification
+      action: render_email_in_app
+      dlt_topic: jobocate.application.events.DLT
+    - service: analytics-event-collector
+      group: jobocate-analytics-collector
+      action: persist_event
+  jobocate.resume.raw:
+    - service: resume-parser-worker
+      group: jobocate-resume-parser
+      action: parse_extract_persist
+  jobocate.resume.parsed:
+    - service: candidate-service
+      group: jobocate-candidate-resume-projector
+      action: update_candidate_profile_review_queue
+    - service: embedding-worker
+      group: jobocate-embedding-worker
+      action: enqueue_embedding_request
+  jobocate.embedding.ready:
+    - service: index-builder-service
+      group: jobocate-index-builder
+      action: enrich_index_document_with_vector

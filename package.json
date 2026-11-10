@@ -1,0 +1,23 @@
+{
+  "name": "jobocate-platform",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "format": "prettier -w \"**/*.{ts,tsx,js,json,md}\"",
+    "dev:job-portal": "pnpm --filter @jobocate/job-portal-web dev",
+    "dev:ats-recruiter": "pnpm --filter @jobocate/ats-recruiter-web dev",
+    "dev:admin": "pnpm --filter @jobocate/admin-console-web dev"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.0",
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,487 @@
+openapi: 3.1.0
+info:
+  title: Jobocate Admin API
+  version: 0.1.0
+  description: |
+    Platform-level (Super Admin) and tenant-level (Tenant Admin)
+    administration: tenant CRUD, user search, feature flags, AI quotas,
+    prompt registry, moderation queue, audit log queries, impersonation.
+    Owned by `admin-service`.
+
+    All endpoints require `bearerJwt`. Most cross-tenant endpoints require
+    `SUPER_ADMIN`; per-tenant endpoints require `TENANT_ADMIN` or
+    `COMPLIANCE_ADMIN` as documented per-endpoint.
+
+servers:
+  - url: http://localhost:8085
+    description: Local
+
+security:
+  - bearerJwt: []
+
+paths:
+  /api/v1/admin/summary:
+    get:
+      summary: Platform summary (stats)
+      operationId: adminSummary
+      responses:
+        '200':
+          description: Summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /api/v1/admin/tenants:
+    get:
+      summary: List all tenants (Super Admin)
+      operationId: listTenantsAdmin
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          schema: { type: string, enum: [ACTIVE, SUSPENDED, DELETED] }
+      responses:
+        '200':
+          description: Paged tenants.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/TenantAdmin' }
+    post:
+      summary: Create tenant (Super Admin)
+      operationId: createTenantAdmin
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TenantCreate' }
+      responses:
+        '201':
+          description: Created.
+          headers:
+            Location: { $ref: './_common.yaml#/components/headers/Location' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantAdmin' }
+
+  /api/v1/admin/tenants/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Update tenant (Super Admin)
+      operationId: updateTenantAdmin
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IfMatchHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantAdmin' }
+    delete:
+      summary: Soft-delete tenant (Super Admin)
+      operationId: deleteTenantAdmin
+      responses:
+        '202': { description: Scheduled for purge after retention window. }
+
+  /api/v1/admin/tenants/{id}/suspend:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Suspend a tenant
+      operationId: suspendTenant
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200':
+          description: Suspended.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantAdmin' }
+
+  /api/v1/admin/tenants/{id}/reactivate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Reactivate a suspended tenant
+      operationId: reactivateTenant
+      responses:
+        '200':
+          description: Active.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantAdmin' }
+
+  /api/v1/admin/users:
+    get:
+      summary: Cross-tenant user search (Super Admin)
+      operationId: searchUsersAdmin
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+        - $ref: './_common.yaml#/components/parameters/QueryParam'
+      responses:
+        '200':
+          description: Paged users.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+
+  /api/v1/admin/impersonate:
+    post:
+      summary: Begin impersonation session (Super Admin)
+      operationId: startImpersonation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_user_id, tenant_id, reason]
+              properties:
+                target_user_id: { type: string, format: uuid }
+                tenant_id: { type: string, format: uuid }
+                reason: { type: string }
+      responses:
+        '200':
+          description: Scoped impersonation token issued; banner enforced in UI.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  expires_in: { type: integer }
+
+  /api/v1/admin/impersonate/end:
+    post:
+      summary: End impersonation
+      operationId: endImpersonation
+      responses:
+        '204': { description: Ended. }
+
+  /api/v1/admin/feature-flags:
+    get:
+      summary: List feature flags (global + per-tenant)
+      operationId: listFeatureFlags
+      responses:
+        '200':
+          description: Flags.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FeatureFlag' }
+
+  /api/v1/admin/feature-flags/{key}:
+    parameters:
+      - name: key
+        in: path
+        required: true
+        schema: { type: string }
+    put:
+      summary: Set or override a feature flag
+      operationId: setFeatureFlag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value: { type: boolean }
+                tenant_id: { type: ['string', 'null'], format: uuid, description: Omit for global. }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeatureFlag' }
+
+  /api/v1/admin/ai-quotas:
+    get:
+      summary: List AI quotas per tenant
+      operationId: listAiQuotas
+      responses:
+        '200':
+          description: Quotas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AiQuota' }
+
+  /api/v1/admin/ai-quotas/{tenant_id}:
+    parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      summary: Set AI quota for a tenant
+      operationId: setAiQuota
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [monthly_credits]
+              properties:
+                monthly_credits: { type: integer, minimum: 0 }
+                hard_limit: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiQuota' }
+
+  /api/v1/admin/prompts:
+    get:
+      summary: List prompt versions
+      operationId: listPrompts
+      responses:
+        '200':
+          description: Prompts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PromptVersion' }
+    post:
+      summary: Create new prompt version
+      operationId: createPromptVersion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PromptVersionCreate' }
+      responses:
+        '201':
+          description: Created (DRAFT).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptVersion' }
+
+  /api/v1/admin/prompts/{id}/promote:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Promote a prompt version to production
+      operationId: promotePrompt
+      responses:
+        '200':
+          description: Promoted; previous version archived.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromptVersion' }
+
+  /api/v1/admin/moderation/jobs:
+    get:
+      summary: Moderation queue (jobs)
+      operationId: listJobModerationQueue
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Paged.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+
+  /api/v1/admin/moderation/jobs/{id}/decision:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Decide on a moderation queue item (hide / remove / dismiss)
+      operationId: decideJobModeration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [HIDE, REMOVE, DISMISS] }
+                note: { type: string }
+      responses:
+        '200': { description: Decided. }
+
+  /api/v1/admin/audit-events:
+    get:
+      summary: Audit log query
+      operationId: queryAuditEvents
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+        - name: tenant_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: actor_user_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: entity_type
+          in: query
+          schema: { type: string }
+        - name: entity_id
+          in: query
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Paged audit events.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/AuditEvent' }
+
+components:
+  securitySchemes:
+    bearerJwt: { $ref: './_common.yaml#/components/securitySchemes/bearerJwt' }
+
+  schemas:
+    TenantAdmin:
+      allOf:
+        - { $ref: './_common.yaml#/components/schemas/Audit' }
+        - type: object
+          required: [id, slug, display_name, status]
+          properties:
+            id: { type: string, format: uuid }
+            slug: { type: string }
+            display_name: { type: string }
+            status: { type: string, enum: [ACTIVE, SUSPENDED, DELETED] }
+
+    TenantCreate:
+      type: object
+      required: [slug, display_name]
+      properties:
+        slug: { type: string, pattern: '^[a-z0-9-]+$' }
+        legal_name: { type: string }
+        display_name: { type: string }
+        time_zone: { type: string, default: UTC }
+        default_locale: { type: string, default: en-US }
+        billing_email: { type: string, format: email }
+        support_email: { type: string, format: email }
+
+    FeatureFlag:
+      type: object
+      required: [key, value]
+      properties:
+        key: { type: string }
+        value: { type: boolean }
+        tenant_id: { type: ['string', 'null'], format: uuid }
+        updated_at: { type: string, format: date-time }
+        updated_by_user_id: { type: ['string', 'null'], format: uuid }
+
+    AiQuota:
+      type: object
+      required: [tenant_id, monthly_credits]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        monthly_credits: { type: integer, minimum: 0 }
+        used_credits_this_period: { type: integer, minimum: 0 }
+        hard_limit: { type: boolean }
+        period_start: { type: string, format: date-time }
+        period_end: { type: string, format: date-time }
+
+    PromptVersion:
+      type: object
+      required: [id, kind, version, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        kind:
+          type: string
+          enum: [RESUME_VARIANT, COVER_LETTER, CANDIDATE_SUMMARY, MATCH_EXPLANATION, INTERVIEW_QA, REJECTION_EMAIL]
+        version: { type: string }
+        status: { type: string, enum: [DRAFT, ACTIVE, ARCHIVED] }
+        prompt_text: { type: string }
+        model_target: { type: string }
+        created_at: { type: string, format: date-time }
+        promoted_at: { type: ['string', 'null'], format: date-time }
+
+    PromptVersionCreate:
+      type: object
+      required: [kind, version, prompt_text]
+      properties:
+        kind: { type: string }
+        version: { type: string }
+        prompt_text: { type: string }
+        model_target: { type: string }
+
+    AuditEvent:
+      type: object
+      required: [id, action, entity_type, occurred_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: ['string', 'null'], format: uuid }
+        actor_user_id: { type: ['string', 'null'], format: uuid }
+        actor_role: { type: ['string', 'null'] }
+        action: { type: string }
+        entity_type: { type: string }
+        entity_id: { type: ['string', 'null'] }
+        correlation_id: { type: ['string', 'null'] }
+        request_id: { type: ['string', 'null'] }
+        ip_address: { type: ['string', 'null'] }
+        user_agent: { type: ['string', 'null'] }
+        metadata:
+          type: object
+          additionalProperties: true
+        occurred_at: { type: string, format: date-time }

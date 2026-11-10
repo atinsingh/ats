@@ -1,0 +1,31 @@
+server:
+  port: ${ADMIN_SERVICE_PORT:8085}
+
+spring:
+  application:
+    name: admin-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jobocate}
+    username: ${SPRING_DATASOURCE_USERNAME:jobocate}
+    password: ${SPRING_DATASOURCE_PASSWORD:jobocate_local_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    table: flyway_admin_schema_history
+    baseline-on-migrate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+jobocate:
+  security:
+    jwt-secret: ${JOBOCATE_JWT_SECRET:jobocate-local-jwt-secret-change-me!!!}
+    allow-dev-tenant-header: ${JOBOCATE_ALLOW_HEADER_TENANT:true}

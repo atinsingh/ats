@@ -1,0 +1,319 @@
+openapi: 3.1.0
+info:
+  title: Jobocate Job API
+  version: 0.1.0
+  description: |
+    Recruiter-facing CRUD and lifecycle for jobs, plus a public job detail
+    endpoint for the marketplace. Owned by `job-service`.
+
+servers:
+  - url: http://localhost:8082
+    description: Local
+
+security:
+  - bearerJwt: []
+
+paths:
+  /api/v1/jobs:
+    get:
+      summary: List jobs in current tenant (recruiter view)
+      operationId: listJobs
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+        - $ref: './_common.yaml#/components/parameters/SortParam'
+        - $ref: './_common.yaml#/components/parameters/QueryParam'
+        - name: status
+          in: query
+          schema: { $ref: './_common.yaml#/components/schemas/JobStatus' }
+      responses:
+        '200':
+          description: Paged list.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/JobSummary' }
+
+    post:
+      summary: Create a new job (DRAFT)
+      operationId: createJob
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IdempotencyKeyHeader'
+        - $ref: './_common.yaml#/components/parameters/CorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JobCreate' }
+      responses:
+        '201':
+          description: Job created.
+          headers:
+            ETag: { $ref: './_common.yaml#/components/headers/ETag' }
+            Location: { $ref: './_common.yaml#/components/headers/Location' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '400': { $ref: './_common.yaml#/components/responses/BadRequest' }
+        '403': { $ref: './_common.yaml#/components/responses/Forbidden' }
+
+  /api/v1/jobs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Job detail (recruiter view)
+      operationId: getJob
+      responses:
+        '200':
+          description: Job detail.
+          headers:
+            ETag: { $ref: './_common.yaml#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '404': { $ref: './_common.yaml#/components/responses/NotFound' }
+    patch:
+      summary: Update job (DRAFT or PUBLISHED)
+      operationId: updateJob
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IfMatchHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JobUpdate' }
+      responses:
+        '200':
+          description: Updated.
+          headers:
+            ETag: { $ref: './_common.yaml#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '409': { $ref: './_common.yaml#/components/responses/Conflict' }
+
+  /api/v1/jobs/{id}/publish:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Transition DRAFT → PUBLISHED
+      operationId: publishJob
+      responses:
+        '200':
+          description: Published.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '422': { $ref: './_common.yaml#/components/responses/UnprocessableEntity' }
+        '409': { $ref: './_common.yaml#/components/responses/Conflict' }
+
+  /api/v1/jobs/{id}/unpublish:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Transition PUBLISHED → DRAFT
+      operationId: unpublishJob
+      responses:
+        '200':
+          description: Unpublished.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '409': { $ref: './_common.yaml#/components/responses/Conflict' }
+
+  /api/v1/jobs/{id}/close:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Transition PUBLISHED → CLOSED
+      operationId: closeJob
+      responses:
+        '200':
+          description: Closed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+
+  /api/v1/jobs/{id}/clone:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Clone into new DRAFT
+      operationId: cloneJob
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IdempotencyKeyHeader'
+      responses:
+        '201':
+          description: Cloned job.
+          headers:
+            Location: { $ref: './_common.yaml#/components/headers/Location' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+
+  /api/v1/jobs/public/{idOrSlug}:
+    parameters:
+      - name: idOrSlug
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      summary: Public job detail (PUBLISHED only, unauthenticated)
+      operationId: getPublicJob
+      security: []
+      responses:
+        '200':
+          description: Public-safe job projection.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobPublic' }
+        '404': { $ref: './_common.yaml#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerJwt: { $ref: './_common.yaml#/components/securitySchemes/bearerJwt' }
+
+  schemas:
+    JobSummary:
+      type: object
+      required: [id, title, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        status: { $ref: './_common.yaml#/components/schemas/JobStatus' }
+        employment_type: { $ref: './_common.yaml#/components/schemas/EmploymentType' }
+        remote_policy: { $ref: './_common.yaml#/components/schemas/RemotePolicy' }
+        location: { type: ['string', 'null'] }
+        created_at: { type: string, format: date-time }
+        published_at: { type: ['string', 'null'], format: date-time }
+
+    Job:
+      allOf:
+        - { $ref: '#/components/schemas/JobSummary' }
+        - { $ref: './_common.yaml#/components/schemas/Audit' }
+        - type: object
+          properties:
+            slug: { type: ['string', 'null'] }
+            organization_id: { type: ['string', 'null'], format: uuid }
+            department: { type: ['string', 'null'] }
+            description: { type: ['string', 'null'] }
+            responsibilities: { type: ['string', 'null'] }
+            qualifications: { type: ['string', 'null'] }
+            experience_min_years: { type: ['integer', 'null'] }
+            experience_max_years: { type: ['integer', 'null'] }
+            salary_min_cents: { type: ['integer', 'null'] }
+            salary_max_cents: { type: ['integer', 'null'] }
+            currency_code: { type: ['string', 'null'] }
+            location_city: { type: ['string', 'null'] }
+            location_region: { type: ['string', 'null'] }
+            location_country: { type: ['string', 'null'] }
+            pipeline_id: { type: ['string', 'null'], format: uuid }
+            boost_score: { type: integer, minimum: 0, default: 0 }
+            skills:
+              type: array
+              items:
+                type: object
+                required: [skill_name, requirement]
+                properties:
+                  skill_name: { type: string }
+                  requirement: { type: string, enum: [REQUIRED, PREFERRED] }
+            screening_questions:
+              type: array
+              items:
+                type: object
+                required: [position, question_text, question_type]
+                properties:
+                  id: { type: string, format: uuid }
+                  position: { type: integer }
+                  question_text: { type: string }
+                  question_type: { type: string, enum: [SHORT_TEXT, LONG_TEXT, SINGLE_CHOICE, MULTI_CHOICE, BOOLEAN, NUMERIC] }
+                  options:
+                    type: array
+                    items: { type: string }
+                  required: { type: boolean }
+
+    JobPublic:
+      type: object
+      required: [id, title, status, company_name]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: ['string', 'null'] }
+        title: { type: string }
+        status: { type: string, enum: [PUBLISHED] }
+        company_name: { type: string }
+        location: { type: ['string', 'null'] }
+        employment_type: { $ref: './_common.yaml#/components/schemas/EmploymentType' }
+        remote_policy: { $ref: './_common.yaml#/components/schemas/RemotePolicy' }
+        salary_min_cents: { type: ['integer', 'null'] }
+        salary_max_cents: { type: ['integer', 'null'] }
+        currency_code: { type: ['string', 'null'] }
+        description: { type: ['string', 'null'] }
+        responsibilities: { type: ['string', 'null'] }
+        qualifications: { type: ['string', 'null'] }
+        published_at: { type: ['string', 'null'], format: date-time }
+
+    JobCreate:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 256 }
+        department: { type: string }
+        description: { type: string }
+        responsibilities: { type: string }
+        qualifications: { type: string }
+        employment_type: { $ref: './_common.yaml#/components/schemas/EmploymentType' }
+        remote_policy: { $ref: './_common.yaml#/components/schemas/RemotePolicy' }
+        experience_min_years: { type: integer, minimum: 0 }
+        experience_max_years: { type: integer, minimum: 0 }
+        salary_min_cents: { type: integer, minimum: 0 }
+        salary_max_cents: { type: integer, minimum: 0 }
+        currency_code: { type: string, minLength: 3, maxLength: 3 }
+        location_city: { type: string }
+        location_region: { type: string }
+        location_country: { type: string }
+        skills:
+          type: array
+          items:
+            type: object
+            required: [skill_name, requirement]
+            properties:
+              skill_name: { type: string }
+              requirement: { type: string, enum: [REQUIRED, PREFERRED] }
+        screening_questions:
+          type: array
+          items:
+            type: object
+            required: [position, question_text, question_type, required]
+            properties:
+              position: { type: integer }
+              question_text: { type: string }
+              question_type: { type: string, enum: [SHORT_TEXT, LONG_TEXT, SINGLE_CHOICE, MULTI_CHOICE, BOOLEAN, NUMERIC] }
+              options:
+                type: array
+                items: { type: string }
+              required: { type: boolean }
+
+    JobUpdate:
+      allOf:
+        - { $ref: '#/components/schemas/JobCreate' }

@@ -1,0 +1,36 @@
+server:
+  port: ${SEARCH_ORCHESTRATOR_PORT:8087}
+
+spring:
+  application:
+    name: search-orchestrator-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    consumer:
+      group-id: ${KAFKA_GROUP_SEARCH_ORCH:jobocate-search-orchestrator}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      max-poll-records: ${KAFKA_MAX_POLL:50}
+    listener:
+      ack-mode: record
+      concurrency: ${KAFKA_LISTENER_CONCURRENCY:2}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+jobocate:
+  kafka:
+    job-events-topic: ${KAFKA_TOPIC_JOB_EVENTS:jobocate.job.events}
+    job-events-dlt: ${KAFKA_TOPIC_JOB_EVENTS_DLT:jobocate.job.events.DLT}
+  search-gateway:
+    base-url: ${SEARCH_GATEWAY_URL:http://localhost:7070}
+    internal-token: ${INTERNAL_INDEX_TOKEN:local-dev-token}
+    request-timeout-ms: ${SEARCH_GATEWAY_TIMEOUT_MS:5000}

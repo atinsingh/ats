@@ -1,0 +1,63 @@
+server:
+  port: ${CANDIDATE_SERVICE_PORT:8083}
+
+spring:
+  application:
+    name: candidate-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jobocate}
+    username: ${SPRING_DATASOURCE_USERNAME:jobocate}
+    password: ${SPRING_DATASOURCE_PASSWORD:jobocate_local_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    table: flyway_candidate_schema_history
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+jobocate:
+  security:
+    jwt-secret: ${JOBOCATE_JWT_SECRET:jobocate-local-jwt-secret-change-me!!!}
+    allow-dev-tenant-header: ${JOBOCATE_ALLOW_HEADER_TENANT:true}
+  internal-token: ${JOBOCATE_INTERNAL_TOKEN:}
+  s3:
+    enabled: ${JOBOCATE_S3_ENABLED:true}
+    endpoint: ${S3_ENDPOINT:http://localhost:9000}
+    region: ${S3_REGION:us-east-1}
+    access-key: ${S3_ACCESS_KEY:minio}
+    secret-key: ${S3_SECRET_KEY:minio12345}
+    bucket: ${S3_BUCKET_RESUMES:jobocate-resumes}
+    path-style: ${JOBOCATE_S3_PATH_STYLE:true}
+    upload-ttl: ${JOBOCATE_S3_UPLOAD_TTL:PT15M}
+    download-ttl: ${JOBOCATE_S3_DOWNLOAD_TTL:PT5M}
+  kafka:
+    resume-raw-topic: ${KAFKA_TOPIC_RESUME_RAW:jobocate.resume.raw}
+    resume-parsed-topic: ${KAFKA_TOPIC_RESUME_PARSED:jobocate.resume.parsed}
+    resume-parsed-group: ${KAFKA_GROUP_CANDIDATE_RESUME_PROJECTOR:jobocate-candidate-resume-projector}
+    resume-parsed-consumer-enabled: ${JOBOCATE_RESUME_PARSED_CONSUMER_ENABLED:true}
+  outbox:
+    poll-delay-ms: ${JOBOCATE_OUTBOX_POLL_DELAY_MS:1000}
+    batch-size: ${JOBOCATE_OUTBOX_BATCH:50}
+    max-backoff-seconds: ${JOBOCATE_OUTBOX_MAX_BACKOFF:600}
+    publisher:
+      enabled: ${JOBOCATE_OUTBOX_PUBLISHER_ENABLED:true}

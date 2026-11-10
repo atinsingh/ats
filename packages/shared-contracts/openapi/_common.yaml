@@ -1,0 +1,244 @@
+openapi: 3.1.0
+info:
+  title: Jobocate Common Components
+  version: 0.1.0
+  description: |
+    Shared schemas, parameters, headers, and responses referenced by all per-API
+    YAMLs in this folder. Not a deployable API in its own right; consumed via
+    `$ref: './_common.yaml#/components/...'` from sibling specs.
+
+paths: {}
+
+components:
+  securitySchemes:
+    bearerJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Standard `Authorization: Bearer <jwt>` flow. Token is HS256-signed by
+        `tenant-auth-service` and carries `sub`, `tenant_id`, `roles[]`, `iat`,
+        `exp`, `iss=jobocate-tenant-auth`.
+    devTenantHeader:
+      type: apiKey
+      in: header
+      name: X-Jobocate-Tenant-Id
+      description: |
+        **Local development only.** Active iff `JOBOCATE_ALLOW_HEADER_TENANT=true`.
+        Production must use `bearerJwt` exclusively.
+
+  parameters:
+    CursorParam:
+      name: cursor
+      in: query
+      schema: { type: string }
+      description: Opaque pagination cursor returned by the previous response.
+    LimitParam:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+    OffsetParam:
+      name: offset
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    SortParam:
+      name: sort
+      in: query
+      schema: { type: string, pattern: '^[a-zA-Z_]+:(asc|desc)$' }
+      description: '`<field>:asc|desc`. Allowlisted per endpoint.'
+    QueryParam:
+      name: q
+      in: query
+      schema: { type: string }
+      description: Free-text query string.
+    CorrelationIdHeader:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema: { type: string, maxLength: 128 }
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, format: uuid }
+      description: |
+        Client-generated UUID for safe retries. Required on endpoints noted in
+        the API contract plan (e.g., application submit, offer send/accept).
+    IfMatchHeader:
+      name: If-Match
+      in: header
+      required: false
+      schema: { type: string }
+      description: ETag (entity version) for optimistic concurrency.
+
+  headers:
+    ETag:
+      schema: { type: string }
+      description: 'Entity version for optimistic locking, e.g., `"3"`.'
+    XRequestId:
+      schema: { type: string }
+    XCorrelationId:
+      schema: { type: string }
+    Location:
+      schema: { type: string, format: uri }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token / tenant.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Authenticated but lacking required role or scope.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: |
+        Conflict — duplicate resource, optimistic-lock failure, idempotency-key
+        replay with different payload, or invalid state transition.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UnprocessableEntity:
+      description: Request was syntactically valid but semantically invalid.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    BadRequest:
+      description: Validation failure or malformed request.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TooManyRequests:
+      description: Rate limit exceeded.
+      headers:
+        X-RateLimit-Limit: { schema: { type: integer } }
+        X-RateLimit-Remaining: { schema: { type: integer } }
+        X-RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ServiceUnavailable:
+      description: Downstream dependency unavailable.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id, timestamp]
+          properties:
+            code:
+              type: string
+              description: Stable machine-readable error code.
+              examples: ['VALIDATION_FAILED', 'APPLICATION_DUPLICATE', 'OPTIMISTIC_LOCK_CONFLICT']
+            message:
+              type: string
+              description: Human-readable summary.
+            request_id:
+              type: string
+            correlation_id:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            details:
+              type: object
+              additionalProperties: true
+              description: Endpoint-specific error context (validation errors keyed by field, conflicting versions, etc.).
+
+    OffsetPage:
+      type: object
+      required: [items, total, limit, offset]
+      properties:
+        items: { type: array, items: { type: object } }
+        total: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 1 }
+        offset: { type: integer, minimum: 0 }
+
+    CursorPage:
+      type: object
+      required: [items, has_more]
+      properties:
+        items: { type: array, items: { type: object } }
+        next_cursor: { type: ['string', 'null'] }
+        has_more: { type: boolean }
+
+    Money:
+      type: object
+      required: [amount_cents, currency]
+      properties:
+        amount_cents: { type: integer, minimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+
+    Audit:
+      type: object
+      properties:
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        created_by_user_id: { type: ['string', 'null'], format: uuid }
+        updated_by_user_id: { type: ['string', 'null'], format: uuid }
+        version: { type: integer, minimum: 0 }
+
+    Role:
+      type: string
+      enum:
+        - SUPER_ADMIN
+        - TENANT_ADMIN
+        - RECRUITER
+        - HIRING_MANAGER
+        - INTERVIEWER
+        - CANDIDATE
+        - FINANCE_ADMIN
+        - COMPLIANCE_ADMIN
+
+    EmploymentType:
+      type: string
+      enum: [FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, TEMPORARY]
+
+    RemotePolicy:
+      type: string
+      enum: [REMOTE_FIRST, HYBRID, ONSITE]
+
+    JobStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, CLOSED, ARCHIVED]
+
+    ApplicationStatus:
+      type: string
+      enum:
+        - DRAFT
+        - APPLIED
+        - SCREENING
+        - SHORTLISTED
+        - INTERVIEW_SCHEDULED
+        - INTERVIEWED
+        - OFFERED
+        - HIRED
+        - REJECTED
+        - WITHDRAWN
+        - EXPIRED
+
+    ProfileVisibility:
+      type: string
+      enum: [PUBLIC, TENANT_ONLY, PRIVATE]
+
+    Availability:
+      type: string
+      enum: [IMMEDIATE, WITHIN_2_WEEKS, WITHIN_30_DAYS, NOT_LOOKING]

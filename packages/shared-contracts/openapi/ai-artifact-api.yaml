@@ -1,0 +1,316 @@
+openapi: 3.1.0
+info:
+  title: Jobocate AI Artifact API
+  version: 0.1.0
+  description: |
+    Lifecycle management for AI-generated content (resume variants, cover
+    letters, candidate summaries, match explanations, interview Q&A,
+    rejection emails, screening question packs, shortlist recommendations).
+
+    Owned by `application-service`. The internal worker callbacks live under
+    `/internal/v1/ai-artifacts/*` and use a static bearer token instead of
+    the user JWT.
+
+servers:
+  - url: http://localhost:8084
+    description: Local
+
+security:
+  - bearerJwt: []
+
+paths:
+  /api/v1/ai-artifacts:
+    post:
+      summary: Request an AI artifact generation
+      operationId: requestAiArtifact
+      description: |
+        Creates a `DRAFT` artifact and enqueues an `ai.artifact.requested`
+        event for downstream workers. The same `Idempotency-Key` for the
+        same tenant returns the originally-created artifact (the second
+        call is a safe retry, not a duplicate).
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IdempotencyKeyHeader'
+        - $ref: './_common.yaml#/components/parameters/CorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequestArtifactRequest' }
+      responses:
+        '201':
+          description: Artifact created in DRAFT state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+        '400': { $ref: './_common.yaml#/components/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/components/responses/Forbidden' }
+
+    get:
+      summary: List artifacts (filter by subject, kind, or requester)
+      operationId: listAiArtifacts
+      description: |
+        Exactly one filter combination must be supplied:
+        * `subject_type` + `subject_id` (preferred) — all artifacts about
+          one entity.
+        * `mine_for_user` — artifacts requested by a specific user.
+        * `kind` — all artifacts of one kind for the tenant (admin-only in
+          practice).
+        With no filter the response is an empty list.
+      parameters:
+        - name: subject_type
+          in: query
+          schema: { $ref: '#/components/schemas/AiArtifactSubjectType' }
+        - name: subject_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: kind
+          in: query
+          schema: { $ref: '#/components/schemas/AiArtifactKind' }
+        - name: mine_for_user
+          in: query
+          schema: { type: string, format: uuid }
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Listing.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Artifact' }
+
+  /api/v1/ai-artifacts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Read one artifact
+      operationId: getAiArtifact
+      responses:
+        '200':
+          description: Detail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+        '404': { $ref: './_common.yaml#/components/responses/NotFound' }
+
+  /api/v1/ai-artifacts/{id}/approve:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Approve a READY_FOR_REVIEW artifact
+      operationId: approveAiArtifact
+      description: |
+        Candidate approves their own draft, or recruiter approves a
+        recruiter-facing draft. Conflict (409) if the artifact isn't in
+        `READY_FOR_REVIEW`.
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CorrelationIdHeader'
+      responses:
+        '200':
+          description: Approved.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+        '409': { $ref: './_common.yaml#/components/responses/Conflict' }
+
+  /api/v1/ai-artifacts/{id}/reject:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Reject an artifact
+      operationId: rejectAiArtifact
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Rejected.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+        '409': { $ref: './_common.yaml#/components/responses/Conflict' }
+
+  /api/v1/ai-artifacts/{id}/archive:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Archive an artifact
+      operationId: archiveAiArtifact
+      responses:
+        '200':
+          description: Archived.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+
+  /internal/v1/ai-artifacts/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Worker callback — successful generation
+      operationId: internalRecordAiArtifactResult
+      security:
+        - internalBearer: []
+      parameters:
+        - name: X-Jobocate-Tenant-Id
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                outputText: { type: string }
+                outputS3Key: { type: string }
+                modelVersion: { type: string }
+                promptVersion: { type: string }
+                idempotencyKey: { type: string, maxLength: 128 }
+      responses:
+        '200':
+          description: Recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+        '401':
+          description: Internal bearer missing or invalid.
+
+  /internal/v1/ai-artifacts/{id}/failure:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Worker callback — generation failed
+      operationId: internalRecordAiArtifactFailure
+      security:
+        - internalBearer: []
+      parameters:
+        - name: X-Jobocate-Tenant-Id
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Artifact' }
+
+components:
+  securitySchemes:
+    bearerJwt:
+      $ref: './_common.yaml#/components/securitySchemes/bearerJwt'
+    internalBearer:
+      type: http
+      scheme: bearer
+      description: |
+        Static service-to-service bearer token (`jobocate.internal-token`).
+        Replaced by mTLS / SPIFFE in production.
+
+  schemas:
+    AiArtifactKind:
+      type: string
+      enum:
+        - RESUME_VARIANT
+        - COVER_LETTER
+        - CANDIDATE_SUMMARY
+        - MATCH_EXPLANATION
+        - INTERVIEW_QA
+        - REJECTION_EMAIL
+        - SCREENING_QUESTIONS
+        - SHORTLIST_RECOMMENDATION
+    AiArtifactStatus:
+      type: string
+      enum: [DRAFT, READY_FOR_REVIEW, APPROVED, REJECTED, FAILED, ARCHIVED]
+    AiArtifactSubjectType:
+      type: string
+      enum: [CANDIDATE_PROFILE, APPLICATION, JOB, RESUME, INTERVIEW]
+
+    RequestArtifactRequest:
+      type: object
+      required: [kind, subjectEntityType, subjectEntityId]
+      properties:
+        kind: { $ref: '#/components/schemas/AiArtifactKind' }
+        subjectEntityType: { $ref: '#/components/schemas/AiArtifactSubjectType' }
+        subjectEntityId: { type: string, format: uuid }
+        relatedApplicationId: { type: string, format: uuid }
+        relatedJobId: { type: string, format: uuid }
+        relatedResumeId: { type: string, format: uuid }
+        promptVersion: { type: string, maxLength: 64 }
+        modelVersion: { type: string, maxLength: 64 }
+        reviewRequired:
+          type: boolean
+          description: |
+            Override the kind-derived default. Candidate-submittable kinds
+            (cover letter, resume variant, interview Q&A) default to true;
+            recruiter advisory kinds default to false.
+        inputs:
+          type: object
+          description: |
+            Free-form context the worker uses to render the artifact.
+            Convention: `candidate_name`, `job_title`, `company`, `skills`
+            (array). Workers must scrub PII before sending to third-party
+            providers.
+          additionalProperties: true
+
+    Artifact:
+      type: object
+      required: [id, kind, subjectEntityType, subjectEntityId, status]
+      properties:
+        id: { type: string, format: uuid }
+        tenantId: { type: string, format: uuid }
+        kind: { $ref: '#/components/schemas/AiArtifactKind' }
+        subjectEntityType: { $ref: '#/components/schemas/AiArtifactSubjectType' }
+        subjectEntityId: { type: string, format: uuid }
+        relatedApplicationId: { type: string, format: uuid }
+        relatedJobId: { type: string, format: uuid }
+        relatedResumeId: { type: string, format: uuid }
+        promptVersion: { type: string }
+        modelVersion: { type: string }
+        status: { $ref: '#/components/schemas/AiArtifactStatus' }
+        reviewRequired: { type: boolean }
+        requestedByUserId: { type: string, format: uuid }
+        approvedByUserId: { type: string, format: uuid }
+        rejectedByUserId: { type: string, format: uuid }
+        rejectionReason: { type: string }
+        failureReason: { type: string }
+        outputText: { type: string }
+        outputS3Key: { type: string }
+        createdAt: { type: string, format: date-time }
+        readyAt: { type: string, format: date-time }
+        approvedAt: { type: string, format: date-time }
+        rejectedAt: { type: string, format: date-time }

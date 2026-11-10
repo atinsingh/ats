@@ -1,0 +1,58 @@
+name: pr-hygiene
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch, title, labels, template and size
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -uo pipefail
+          fail=0
+          err() { echo "::error::$1"; fail=1; }
+
+          [[ "$BRANCH" =~ ^(feat|fix|refactor|perf|test|docs|chore|hotfix)/IATS-[0-9]+-[a-z0-9-]+$ ]] \
+            || err "Branch '$BRANCH' must be <type>/IATS-<n>-<slug> (spike branches are never merged)."
+          (( ${#BRANCH} <= 60 )) || err "Branch name longer than 60 characters."
+
+          [[ "$TITLE" =~ ^IATS-[0-9]+\ (feat|fix|refactor|perf|test|docs|chore|build|ci|style|revert)(\([a-z0-9._/-]+\))?!?:\ .+ ]] \
+            || err "Title must be 'IATS-123 <type>(<scope>): <summary>'."
+          bkey=$(grep -oE 'IATS-[0-9]+' <<<"$BRANCH" | head -1)
+          tkey=$(grep -oE 'IATS-[0-9]+' <<<"$TITLE" | head -1)
+          [[ -n "$bkey" && "$bkey" == "$tkey" ]] || err "Jira key in title ($tkey) must match branch ($bkey)."
+
+          if [[ "$DRAFT" != "true" ]]; then
+            grep -q '_TODO_' <<<"$BODY" && err "PR description still contains _TODO_ placeholders."
+            grep -q '## Acceptance criteria' <<<"$BODY" || err "PR description is missing the template sections."
+            grep -qE '(^|,)class:' <<<"$LABELS" || err "Add at least one change-class label (class:routine, class:product, …)."
+          else
+            echo "Draft PR: template and label checks run when it is marked ready for review."
+          fi
+
+          size=$(gh api "repos/$REPO/pulls/$PR/files" --paginate \
+            --jq '.[] | select(.filename | test("(pnpm-lock\\.yaml|go\\.sum|\\.lock|/generated/)") | not) | .additions + .deletions' \
+            | awk '{s+=$1} END {print s+0}')
+          echo "Changed lines (excluding lockfiles/generated): $size"
+          if (( size > 800 )) && ! grep -qE '(^|,)large-pr-approved(,|$)' <<<"$LABELS"; then
+            err "PR changes $size lines (>800). Split it, or a tech lead adds 'large-pr-approved'."
+          elif (( size > 400 )); then
+            echo "::warning::PR changes $size lines (target ≤400). Justify in the description."
+          fi
+
+          exit $fail

@@ -1,0 +1,19 @@
+{
+  "name": "@jobocate/api-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"console.log('@jobocate/api-sdk: types checked by consumers')\"",
+    "lint": "node -e \"process.exit(0)\"",
+    "dev": "node -e \"process.exit(0)\"",
+    "test": "node -e \"process.exit(0)\""
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

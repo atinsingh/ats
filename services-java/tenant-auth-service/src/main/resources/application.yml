@@ -1,0 +1,34 @@
+server:
+  port: ${TENANT_AUTH_PORT:8090}
+
+spring:
+  application:
+    name: tenant-auth-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jobocate}
+    username: ${SPRING_DATASOURCE_USERNAME:jobocate}
+    password: ${SPRING_DATASOURCE_PASSWORD:jobocate_local_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    table: flyway_auth_schema_history
+    baseline-on-migrate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+jobocate:
+  security:
+    jwt-secret: ${JOBOCATE_JWT_SECRET:jobocate-local-jwt-secret-change-me!!!}
+    jwt-issuer: ${JOBOCATE_JWT_ISSUER:jobocate-local}
+    jwt-audience: ${JOBOCATE_JWT_AUDIENCE:jobocate-platform}
+    access-token-ttl-seconds: ${JOBOCATE_ACCESS_TTL:900}
+    refresh-token-ttl-seconds: ${JOBOCATE_REFRESH_TTL:1209600}

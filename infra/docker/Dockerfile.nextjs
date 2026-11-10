@@ -1,0 +1,35 @@
+# Next.js production image (monorepo-aware).
+# Build from repository root.
+#
+# Example:
+# docker build -f infra/docker/Dockerfile.nextjs \
+#   --build-arg PNPM_FILTER=@jobocate/job-portal-web \
+#   -t jobocate/job-portal-web:local .
+
+FROM node:20-bookworm AS deps
+WORKDIR /app
+RUN corepack enable
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+COPY apps ./apps
+COPY packages ./packages
+RUN pnpm install --frozen-lockfile || pnpm install
+
+FROM node:20-bookworm AS builder
+WORKDIR /app
+RUN corepack enable
+COPY --from=deps /app /app
+ARG PNPM_FILTER=@jobocate/job-portal-web
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm --filter ${PNPM_FILTER} build
+
+FROM node:20-bookworm AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN corepack enable
+COPY --from=builder /app /app
+ARG PNPM_FILTER=@jobocate/job-portal-web
+ENV PNPM_FILTER=${PNPM_FILTER}
+WORKDIR /app
+EXPOSE 3000
+CMD ["sh", "-c", "pnpm --filter ${PNPM_FILTER} start"]

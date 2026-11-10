@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobocate.ai/schemas/job-index-document.json",
+  "title": "JobSearchDocument",
+  "description": "Denormalized OpenSearch document representing a job for search and detail. Source of truth is `jobs` table in `job-service`. Document id = job_id. Tenant filter is mandatory at query time.",
+  "type": "object",
+  "required": [
+    "tenant_id",
+    "job_id",
+    "title",
+    "status",
+    "indexed_at"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Owning tenant. Mandatory query filter applied by search-gateway."
+    },
+    "job_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Job aggregate id. Equals OpenSearch document _id."
+    },
+    "organization_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Sub-tenant employer entity. Defaults to tenant default org for MVP."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "description_text": {
+      "type": "string",
+      "description": "Full description text used for analyzed search. May be plain text or normalized markdown."
+    },
+    "company_name": {
+      "type": "string",
+      "description": "Display company name (snapshot at index time)."
+    },
+    "location": {
+      "type": ["string", "null"],
+      "description": "Composite display location, e.g. 'Remote (US)' or 'Berlin, Germany'."
+    },
+    "country": {
+      "type": ["string", "null"],
+      "description": "ISO-3166-1 alpha-2 country code, e.g. 'US', 'DE'."
+    },
+    "region": {
+      "type": ["string", "null"],
+      "description": "Region / state / province name."
+    },
+    "city": {
+      "type": ["string", "null"]
+    },
+    "remote_policy": {
+      "type": ["string", "null"],
+      "enum": ["REMOTE_FIRST", "HYBRID", "ONSITE", null]
+    },
+    "employment_type": {
+      "type": ["string", "null"],
+      "enum": ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERNSHIP", "TEMPORARY", null]
+    },
+    "salary_min_cents": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "salary_max_cents": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "currency": {
+      "type": ["string", "null"],
+      "minLength": 3,
+      "maxLength": 3,
+      "description": "ISO-4217 currency code."
+    },
+    "experience_min_years": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 60
+    },
+    "experience_max_years": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 60
+    },
+    "skills": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "description": "Normalized skill keywords. Indexed as keyword for facets and filters."
+    },
+    "industry": {
+      "type": ["string", "null"]
+    },
+    "department": {
+      "type": ["string", "null"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "PUBLISHED", "CLOSED", "ARCHIVED"],
+      "description": "DRAFT/CLOSED/ARCHIVED documents are typically deleted from the index, but status is included for safety filters."
+    },
+    "published_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO-8601 UTC. Used for recency decay scoring and sort by date."
+    },
+    "indexed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "boost_score": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Sponsored ranking boost. Capped at JOBOCATE_MAX_BOOST in the gateway."
+    },
+    "facets": {
+      "type": "object",
+      "description": "Computed display facet values, e.g. salary_band, experience_band. Pre-computed by projector to keep query-time logic simple.",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean", "null"]
+      }
+    },
+    "title_vector": {
+      "type": ["array", "null"],
+      "items": { "type": "number" },
+      "description": "Optional dense embedding for hybrid kNN ranking. Length must match the index mapping (currently dim 128 for the deterministic stub embedding worker; will rise to model-native dim once a real model is wired). Supplied to the document by the projector after the embedding-worker emits EMBEDDING_READY for the job title."
+    },
+    "embedding_model": {
+      "type": ["string", "null"],
+      "description": "Identifier of the embedding model used (e.g., 'pseudo-dev', 'bge-base-en-v1.5')."
+    },
+    "embedding_dim": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "description": "Dimension of title_vector when present."
+    }
+  }
+}

@@ -1,0 +1,388 @@
+openapi: 3.1.0
+info:
+  title: Jobocate Application API
+  version: 0.1.0
+  description: |
+    Candidate application lifecycle (state machine in
+    `docs/04-workflows/application-state-machine.md`), pipelines, notes,
+    tags, ratings. Owned by `application-service`.
+
+servers:
+  - url: http://localhost:8084
+    description: Local
+
+security:
+  - bearerJwt: []
+
+paths:
+  /api/v1/applications:
+    post:
+      summary: Submit an application (or DRAFT)
+      operationId: submitApplication
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IdempotencyKeyHeader'
+        - $ref: './_common.yaml#/components/parameters/CorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApplicationCreate' }
+      responses:
+        '201':
+          description: Application created.
+          headers:
+            ETag: { $ref: './_common.yaml#/components/headers/ETag' }
+            Location: { $ref: './_common.yaml#/components/headers/Location' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '400':
+          description: |
+            Validation error. Common error codes:
+            - VALIDATION_FAILED
+            - IDEMPOTENCY_KEY_REQUIRED
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Error' }
+        '409':
+          description: |
+            Conflict. Common error codes:
+            - APPLICATION_DUPLICATE (existing application id in details.application_id)
+            - JOB_NOT_OPEN
+            - IDEMPOTENCY_KEY_PAYLOAD_MISMATCH
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Error' }
+
+  /api/v1/applications/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get application detail (own or recruiter team)
+      operationId: getApplication
+      responses:
+        '200':
+          description: Detail.
+          headers:
+            ETag: { $ref: './_common.yaml#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '404': { $ref: './_common.yaml#/components/responses/NotFound' }
+
+  /api/v1/applications/{id}/timeline:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Timeline entries (append-only)
+      operationId: getApplicationTimeline
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Timeline.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/TimelineEntry' }
+
+  /api/v1/applications/{id}/status:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Change application status (state machine)
+      operationId: changeApplicationStatus
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IfMatchHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              properties:
+                to: { $ref: './_common.yaml#/components/schemas/ApplicationStatus' }
+                reason_code: { type: string }
+                note_md: { type: string }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '409':
+          description: |
+            APPLICATION_TRANSITION_NOT_ALLOWED, OPTIMISTIC_LOCK_CONFLICT.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Error' }
+
+  /api/v1/applications/{id}/withdraw:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Candidate withdraws own application
+      operationId: withdrawApplication
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200':
+          description: Withdrawn.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+
+  /api/v1/applications/{id}/reject:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Recruiter rejects application with disposition reason
+      operationId: rejectApplication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [disposition_reason_code]
+              properties:
+                disposition_reason_code: { type: string }
+                note_md: { type: string }
+      responses:
+        '200':
+          description: Rejected.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+
+  /api/v1/applications/{id}/notes:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: List notes
+      operationId: listApplicationNotes
+      responses:
+        '200':
+          description: Notes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Note' }
+    post:
+      summary: Add note
+      operationId: addApplicationNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body_md]
+              properties:
+                body_md: { type: string }
+                mentioned_user_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Note' }
+
+  /api/v1/applications/{id}/tags:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Add tag
+      operationId: addApplicationTag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tag]
+              properties:
+                tag: { type: string, minLength: 1, maxLength: 64 }
+      responses:
+        '201': { description: Created. }
+
+  /api/v1/applications/{id}/tags/{tag}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: tag
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      summary: Remove tag
+      operationId: removeApplicationTag
+      responses:
+        '204': { description: Deleted. }
+
+  /api/v1/me/applications:
+    get:
+      summary: Candidate own application list
+      operationId: listMyApplications
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Paged.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Application' }
+
+  /api/v1/jobs/{job_id}/applications:
+    parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Recruiter list of applications for a job
+      operationId: listJobApplications
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          schema: { $ref: './_common.yaml#/components/schemas/ApplicationStatus' }
+        - name: tag
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paged.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Application' }
+
+components:
+  securitySchemes:
+    bearerJwt: { $ref: './_common.yaml#/components/securitySchemes/bearerJwt' }
+
+  schemas:
+    Application:
+      allOf:
+        - { $ref: './_common.yaml#/components/schemas/Audit' }
+        - type: object
+          required: [id, tenant_id, job_id, candidate_profile_id, status, applied_at]
+          properties:
+            id: { type: string, format: uuid }
+            tenant_id: { type: string, format: uuid }
+            job_id: { type: string, format: uuid }
+            candidate_profile_id: { type: string, format: uuid }
+            resume_id_used: { type: ['string', 'null'], format: uuid }
+            cover_letter_text: { type: ['string', 'null'] }
+            screening_answers:
+              type: object
+              additionalProperties: true
+              description: Keyed by screening_question id.
+            status: { $ref: './_common.yaml#/components/schemas/ApplicationStatus' }
+            current_stage_id: { type: ['string', 'null'], format: uuid }
+            source: { type: ['string', 'null'], enum: [DIRECT, JOB_BOARD, IMPORT, REFERRAL] }
+            applied_at: { type: string, format: date-time }
+
+    ApplicationCreate:
+      type: object
+      required: [job_id, resume_id]
+      properties:
+        job_id: { type: string, format: uuid }
+        resume_id: { type: string, format: uuid }
+        cover_letter_text: { type: string }
+        screening_answers:
+          type: object
+          additionalProperties: true
+        source: { type: string, enum: [DIRECT, JOB_BOARD, IMPORT, REFERRAL] }
+        status:
+          type: string
+          enum: [DRAFT, APPLIED]
+          default: APPLIED
+
+    TimelineEntry:
+      type: object
+      required: [id, application_id, entry_type, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        application_id: { type: string, format: uuid }
+        entry_type:
+          type: string
+          enum: [STATUS_CHANGED, STAGE_CHANGED, NOTE_ADDED, INTERVIEW_SCHEDULED, OFFER_SENT, WITHDRAWN, REJECTED]
+        from_value: { type: ['string', 'null'] }
+        to_value: { type: ['string', 'null'] }
+        actor_user_id: { type: ['string', 'null'], format: uuid }
+        actor_role: { type: ['string', 'null'] }
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at: { type: string, format: date-time }
+
+    Note:
+      type: object
+      required: [id, application_id, author_user_id, body_md, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        application_id: { type: string, format: uuid }
+        author_user_id: { type: string, format: uuid }
+        body_md: { type: string }
+        mentioned_user_ids:
+          type: array
+          items: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

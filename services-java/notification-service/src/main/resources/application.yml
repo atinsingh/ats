@@ -1,0 +1,43 @@
+server:
+  port: ${NOTIFICATION_SERVICE_PORT:8086}
+
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jobocate}
+    username: ${SPRING_DATASOURCE_USERNAME:jobocate}
+    password: ${SPRING_DATASOURCE_PASSWORD:jobocate_local_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    table: flyway_notification_schema_history
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    consumer:
+      group-id: ${KAFKA_GROUP_NOTIFICATION:jobocate-notification}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+jobocate:
+  security:
+    jwt-secret: ${JOBOCATE_JWT_SECRET:jobocate-local-jwt-secret-change-me!!!}
+    allow-dev-tenant-header: ${JOBOCATE_ALLOW_HEADER_TENANT:true}
+  kafka:
+    job-events-topic: ${KAFKA_TOPIC_JOB_EVENTS:jobocate.job.events}
+    application-events-topic: ${KAFKA_TOPIC_APPLICATION_EVENTS:jobocate.application.events}
+    notification-events-topic: ${KAFKA_TOPIC_NOTIFICATION_EVENTS:jobocate.notification.events}
+  internal-token: ${JOBOCATE_INTERNAL_TOKEN:jobocate-internal-dev-token}

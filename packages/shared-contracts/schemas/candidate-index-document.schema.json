@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobocate.ai/schemas/candidate-index-document.json",
+  "title": "CandidateSearchDocument",
+  "description": "Denormalized OpenSearch document representing an opted-in candidate for recruiter resume-database search. Source of truth is `candidate_profiles` (and derived tables) in `candidate-service`. Document id = candidate_id. Tenant + consent filters are mandatory at query time.",
+  "type": "object",
+  "required": [
+    "candidate_id",
+    "tenant_id",
+    "profile_visibility",
+    "consent_searchable",
+    "indexed_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "candidate_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Candidate profile id. Equals OpenSearch document _id."
+    },
+    "tenant_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Owning tenant for tenant-imported candidates. NULL for marketplace-only candidates (in which case `tenants_visible_to` controls per-tenant visibility)."
+    },
+    "tenants_visible_to": {
+      "type": "array",
+      "items": { "type": "string", "format": "uuid" },
+      "description": "When `profile_visibility=TENANT_ONLY`, this list enumerates tenants permitted to see the candidate (typically tenants the candidate has applied to). Mandatory join filter applied by gateway."
+    },
+    "profile_visibility": {
+      "type": "string",
+      "enum": ["PUBLIC", "TENANT_ONLY", "PRIVATE"],
+      "description": "PRIVATE candidates are NOT indexed (the projector removes them); the value is included in the schema for safety and to support transitional states."
+    },
+    "consent_searchable": {
+      "type": "boolean",
+      "description": "Mandatory: gateway adds `term consent_searchable=true` to every candidate query."
+    },
+    "consent_recorded_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Timestamp of the most recent consent grant; used to enforce SLO on revocation propagation."
+    },
+    "full_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": ["string", "null"],
+      "description": "Candidate-declared current title (e.g., 'Senior Backend Engineer')."
+    },
+    "headline": {
+      "type": ["string", "null"]
+    },
+    "email": {
+      "type": ["string", "null"],
+      "format": "email",
+      "description": "Included only when consent allows recruiter contact."
+    },
+    "phone": {
+      "type": ["string", "null"],
+      "description": "Included only when consent allows recruiter contact."
+    },
+    "location": {
+      "type": ["string", "null"]
+    },
+    "country": {
+      "type": ["string", "null"],
+      "description": "ISO-3166-1 alpha-2."
+    },
+    "region": { "type": ["string", "null"] },
+    "city": { "type": ["string", "null"] },
+    "skills": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "description": "Aggregated from profile + work experiences."
+    },
+    "total_experience_years": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Computed sum of work-experience durations."
+    },
+    "education": {
+      "type": "array",
+      "description": "Nested for term-level filters per education row.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["institution"],
+        "properties": {
+          "institution": { "type": "string" },
+          "degree": { "type": ["string", "null"] },
+          "field_of_study": { "type": ["string", "null"] },
+          "started_at": { "type": ["string", "null"], "format": "date" },
+          "ended_at": { "type": ["string", "null"], "format": "date" }
+        }
+      }
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "issuer": { "type": ["string", "null"] },
+          "issued_at": { "type": ["string", "null"], "format": "date" },
+          "expires_at": { "type": ["string", "null"], "format": "date" }
+        }
+      }
+    },
+    "desired_roles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "salary_expectation_min_cents": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "salary_expectation_max_cents": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "currency": {
+      "type": ["string", "null"],
+      "minLength": 3,
+      "maxLength": 3,
+      "description": "ISO-4217 currency code for salary expectation."
+    },
+    "availability": {
+      "type": ["string", "null"],
+      "enum": ["IMMEDIATE", "WITHIN_2_WEEKS", "WITHIN_30_DAYS", "NOT_LOOKING", null]
+    },
+    "work_authorization": {
+      "type": ["string", "null"]
+    },
+    "resume_text": {
+      "type": ["string", "null"],
+      "description": "Plain text extracted from the candidate's default resume by resume-parser-worker. Limited length (~50KB) to keep indices small; long resumes are truncated with the original stored in S3."
+    },
+    "resume_id_default": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "embedding_vector_metadata": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string" },
+        "dim": { "type": "integer", "minimum": 1 },
+        "computed_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "profile_vector": {
+      "type": ["array", "null"],
+      "items": { "type": "number" },
+      "description": "Optional dense embedding for hybrid kNN. Length must match index mapping (matches embedding_vector_metadata.dim)."
+    },
+    "indexed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

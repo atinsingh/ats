@@ -1,0 +1,40 @@
+# Code owners — a PR needs approval from an owner of every path it touches.
+# TODO(tech lead): replace the placeholder teams below with real GitHub teams or users
+# before enabling "Require review from Code Owners". See agent-delivery-framework.md §18.
+
+*                                   @insyght-ai/tech-leads
+
+# Process and governance: changes here weaken or strengthen every other rule.
+/AGENTS.md                          @insyght-ai/tech-leads
+/CLAUDE.md                          @insyght-ai/tech-leads
+/.github/                           @insyght-ai/tech-leads
+/.githooks/                         @insyght-ai/tech-leads
+/scripts/agent/                     @insyght-ai/tech-leads
+/.claude/                           @insyght-ai/tech-leads
+/.cursor/                           @insyght-ai/tech-leads
+/docs/16-devops/                    @insyght-ai/tech-leads
+
+# Contracts (producer and consumer review)
+/packages/shared-contracts/         @insyght-ai/tech-leads @insyght-ai/backend
+/packages/api-sdk/                  @insyght-ai/frontend @insyght-ai/backend
+
+# Data: migrations, schemas, retention
+**/db/migration/                    @insyght-ai/data
+/infra/sql/                         @insyght-ai/data
+
+# Security: auth, tenancy, credentials
+/services-java/platform-starter/    @insyght-ai/security @insyght-ai/backend
+/services-java/tenant-auth-service/ @insyght-ai/security @insyght-ai/backend
+/docs/08-security/                  @insyght-ai/security
+/docs/09-multi-tenancy/             @insyght-ai/security
+
+# AI
+/workers-python/                    @insyght-ai/ai
+/docs/07-ai-platform/               @insyght-ai/ai
+
+# Stacks
+/services-java/                     @insyght-ai/backend
+/services-go/                       @insyght-ai/backend
+/apps/                              @insyght-ai/frontend
+/packages/ui/                       @insyght-ai/frontend
+/infra/                             @insyght-ai/platform

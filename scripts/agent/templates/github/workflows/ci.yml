@@ -1,0 +1,153 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.f.outputs.web }}
+      java: ${{ steps.f.outputs.java }}
+      go: ${{ steps.f.outputs.go }}
+      python: ${{ steps.f.outputs.python }}
+      contracts: ${{ steps.f.outputs.contracts }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: f
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            web: ['apps/**', 'packages/**', 'package.json', 'pnpm-lock.yaml', 'turbo.json', 'tsconfig*.json']
+            java: ['services-java/**', 'build.gradle.kts', 'settings.gradle.kts', 'gradle/**']
+            go: ['services-go/**']
+            python: ['workers-python/**']
+            contracts: ['packages/shared-contracts/**']
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: gitleaks
+        run: |
+          range="${{ github.event.pull_request.base.sha || github.event.before }}..${{ github.sha }}"
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.21.2 \
+            detect --source /repo --log-opts="$range" --redact --no-banner
+
+  migrations:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Existing Flyway migrations are append-only
+        run: |
+          edited=$(git diff --name-status "${{ github.event.pull_request.base.sha }}"...HEAD \
+            | awk '$1 ~ /^(M|D|R)/ && $NF ~ /db\/migration\/V[0-9]+__.*\.sql$/ {print $NF}')
+          if [ -n "$edited" ]; then echo "::error::Modified existing migrations: $edited — add a new migration instead."; exit 1; fi
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --if-present exec tsc --noEmit
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+
+  java:
+    needs: changes
+    if: needs.changes.outputs.java == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew build --no-daemon
+
+  go:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.23' }
+      - name: vet and test every module
+        run: |
+          set -e
+          for m in services-go/*/; do
+            [ -f "$m/go.mod" ] || continue
+            echo "::group::$m"; (cd "$m" && go vet ./... && go test ./...); echo "::endgroup::"
+          done
+
+  python:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: ruff and pytest every worker
+        run: |
+          set -e
+          pip install ruff
+          for w in workers-python/*/; do
+            [ -f "$w/pyproject.toml" ] || continue
+            echo "::group::$w"
+            (cd "$w" && pip install -e ".[dev]" && ruff check . && { [ -d tests ] && PYTHONPATH=src pytest -q || echo "no tests/ yet"; })
+            echo "::endgroup::"
+          done
+
+  contracts:
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          for f in packages/shared-contracts/openapi/*.yaml; do
+            npx --yes @redocly/cli@1.25.11 lint --format=github-actions "$f"
+          done
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # Needs GitHub Advanced Security on private repositories; set continue-on-error to false once enabled.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0
+
+  # Single required check for branch protection: fails if any job failed, passes when jobs were skipped by path filters.
+  ci-required:
+    if: always()
+    needs: [changes, secrets-scan, migrations, web, java, go, python, contracts]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo '${{ toJSON(needs) }}' | jq -e 'to_entries | map(.value.result) | all(. == "success" or . == "skipped")'

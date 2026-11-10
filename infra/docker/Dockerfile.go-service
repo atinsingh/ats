@@ -1,0 +1,17 @@
+# Example:
+# docker build -f infra/docker/Dockerfile.go-service --build-arg SERVICE_PATH=services-go/search-gateway --build-arg BIN=search-gateway -t jobocate/search-gateway:local .
+
+FROM golang:1.23 AS builder
+WORKDIR /src
+ARG SERVICE_PATH=services-go/search-gateway
+ARG BIN=search-gateway
+COPY . .
+WORKDIR /src/${SERVICE_PATH}
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/service ./cmd/${BIN}
+
+FROM gcr.io/distroless/static-debian12:nonroot
+WORKDIR /
+COPY --from=builder /out/service /service
+USER nonroot:nonroot
+EXPOSE 8080
+ENTRYPOINT ["/service"]

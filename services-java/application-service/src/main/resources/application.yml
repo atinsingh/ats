@@ -1,0 +1,47 @@
+server:
+  port: ${APPLICATION_SERVICE_PORT:8084}
+
+spring:
+  application:
+    name: application-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jobocate}
+    username: ${SPRING_DATASOURCE_USERNAME:jobocate}
+    password: ${SPRING_DATASOURCE_PASSWORD:jobocate_local_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    table: flyway_application_schema_history
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+jobocate:
+  security:
+    jwt-secret: ${JOBOCATE_JWT_SECRET:jobocate-local-jwt-secret-change-me!!!}
+    allow-dev-tenant-header: ${JOBOCATE_ALLOW_HEADER_TENANT:true}
+  internal-token: ${JOBOCATE_INTERNAL_TOKEN:jobocate-internal-dev-token}
+  kafka:
+    application-events-topic: ${KAFKA_TOPIC_APPLICATION_EVENTS:jobocate.application.events}
+    ai-artifact-events-topic: ${KAFKA_TOPIC_AI_ARTIFACT_EVENTS:jobocate.ai.artifact.events}
+  outbox:
+    poll-delay-ms: ${JOBOCATE_OUTBOX_POLL_DELAY_MS:1000}
+    batch-size: ${JOBOCATE_OUTBOX_BATCH:50}
+    max-backoff-seconds: ${JOBOCATE_OUTBOX_MAX_BACKOFF:600}
+    publisher:
+      enabled: ${JOBOCATE_OUTBOX_PUBLISHER_ENABLED:true}

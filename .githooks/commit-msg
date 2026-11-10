@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Enforce Conventional Commits + Jira key. Enable with: git config core.hooksPath .githooks
+# See docs/16-devops/agent-delivery-framework.md §6.
+set -euo pipefail
+
+msg_file="$1"
+subject="$(grep -v '^#' "$msg_file" | sed '/^[[:space:]]*$/d' | head -n1)"
+
+# Allow git-generated merge/revert/fixup subjects.
+if [[ "$subject" =~ ^(Merge|Revert|fixup!|squash!|amend!) ]]; then exit 0; fi
+
+pattern='^(feat|fix|refactor|perf|test|docs|chore|build|ci|style|revert)(\([a-z0-9._/-]+\))?!?: .{1,72}$'
+if ! [[ "$subject" =~ $pattern ]]; then
+  cat >&2 <<EOF
+✗ commit-msg: subject must follow Conventional Commits:
+    <type>(<scope>): <summary ≤ 72 chars>
+  types: feat fix refactor perf test docs chore build ci style revert
+  got:   $subject
+EOF
+  exit 1
+fi
+
+if ! grep -qE 'IATS-[0-9]+' "$msg_file"; then
+  branch_key="$(git rev-parse --abbrev-ref HEAD 2>/dev/null | grep -oE 'IATS-[0-9]+' || true)"
+  echo "✗ commit-msg: add a Jira footer, e.g.  Jira: ${branch_key:-IATS-123}" >&2
+  exit 1
+fi
+
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+if [[ "$branch" == "main" ]]; then
+  echo "✗ commit-msg: do not commit directly to main — use scripts/agent/start-story.sh" >&2
+  exit 1
+fi

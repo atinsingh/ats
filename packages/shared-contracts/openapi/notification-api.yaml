@@ -1,0 +1,188 @@
+openapi: 3.1.0
+info:
+  title: Jobocate Notification API
+  version: 0.1.0
+  description: |
+    User notification inbox and per-(type, channel) preferences. Owned by
+    `notification-service`.
+
+servers:
+  - url: http://localhost:8086
+    description: Local
+
+security:
+  - bearerJwt: []
+
+paths:
+  /api/v1/notifications:
+    get:
+      summary: List own notifications
+      operationId: listMyNotifications
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/CursorParam'
+        - $ref: './_common.yaml#/components/parameters/LimitParam'
+        - name: unread
+          in: query
+          schema: { type: boolean }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/NotificationType' }
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Paged.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/components/schemas/CursorPage' }
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Notification' }
+
+  /api/v1/notifications/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Notification detail
+      operationId: getNotification
+      responses:
+        '200':
+          description: Detail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+        '404': { $ref: './_common.yaml#/components/responses/NotFound' }
+
+  /api/v1/notifications/{id}/read:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Mark notification as read
+      operationId: markNotificationRead
+      responses:
+        '204': { description: Marked. }
+
+  /api/v1/notifications/mark-all-read:
+    post:
+      summary: Bulk mark all unread as read
+      operationId: markAllNotificationsRead
+      responses:
+        '200':
+          description: Count of newly-read notifications.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  marked: { type: integer }
+
+  /api/v1/me/notification-preferences:
+    get:
+      summary: List own per-(type, channel) preferences
+      operationId: listMyNotificationPreferences
+      responses:
+        '200':
+          description: Preferences.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/NotificationPreference' }
+    patch:
+      summary: Bulk update preferences
+      operationId: updateMyNotificationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preferences]
+              properties:
+                preferences:
+                  type: array
+                  items: { $ref: '#/components/schemas/NotificationPreferenceWrite' }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/NotificationPreference' }
+
+components:
+  securitySchemes:
+    bearerJwt: { $ref: './_common.yaml#/components/securitySchemes/bearerJwt' }
+
+  schemas:
+    NotificationType:
+      type: string
+      enum:
+        - APPLICATION_SUBMITTED
+        - APPLICATION_RECEIVED
+        - APPLICATION_STATUS_CHANGED
+        - INTERVIEW_SCHEDULED
+        - INTERVIEW_RESCHEDULED
+        - INTERVIEW_REMINDER
+        - INTERVIEW_FEEDBACK_COMPLETE
+        - JOB_ALERT
+        - SAVED_SEARCH_DIGEST
+        - AI_DRAFT_READY
+        - OFFER_SENT
+        - OFFER_ACCEPTED_CONFIRMATION
+        - MENTION
+        - CANDIDATE_HIRED
+        - CANDIDATE_WITHDREW
+
+    NotificationChannel:
+      type: string
+      enum: [EMAIL, IN_APP, SMS]
+
+    NotificationStatus:
+      type: string
+      enum: [QUEUED, SENT, FAILED, SUPPRESSED]
+
+    Notification:
+      type: object
+      required: [id, recipient_user_id, type, channel, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: ['string', 'null'], format: uuid }
+        recipient_user_id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/NotificationType' }
+        channel: { $ref: '#/components/schemas/NotificationChannel' }
+        status: { $ref: '#/components/schemas/NotificationStatus' }
+        payload:
+          type: object
+          additionalProperties: true
+        created_at: { type: string, format: date-time }
+        read_at: { type: ['string', 'null'], format: date-time }
+
+    NotificationPreference:
+      type: object
+      required: [notification_type, channel, enabled]
+      properties:
+        notification_type: { $ref: '#/components/schemas/NotificationType' }
+        channel: { $ref: '#/components/schemas/NotificationChannel' }
+        enabled: { type: boolean }
+        cadence:
+          type: string
+          enum: [IMMEDIATE, DAILY, OFF]
+          default: IMMEDIATE
+        tenant_id: { type: ['string', 'null'], format: uuid }
+
+    NotificationPreferenceWrite:
+      allOf:
+        - { $ref: '#/components/schemas/NotificationPreference' }

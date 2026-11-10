@@ -1,0 +1,116 @@
+openapi: 3.1.0
+info:
+  title: Jobocate Tenant API
+  version: 0.1.0
+  description: |
+    Tenant lookup and self-management. Cross-tenant tenant CRUD lives in
+    `admin-api.yaml`. Owned by `ats-core-service`.
+
+servers:
+  - url: http://localhost:8081
+    description: Local
+
+security:
+  - bearerJwt: []
+
+paths:
+  /api/v1/tenants/me:
+    get:
+      summary: Current tenant detail (from JWT tenant_id)
+      operationId: getMyTenant
+      responses:
+        '200':
+          description: Tenant detail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tenant' }
+        '401': { $ref: './_common.yaml#/components/responses/Unauthorized' }
+
+    patch:
+      summary: Update tenant profile / branding
+      operationId: updateMyTenant
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/IfMatchHeader'
+        - $ref: './_common.yaml#/components/parameters/CorrelationIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TenantUpdate' }
+      responses:
+        '200':
+          description: Updated tenant.
+          headers:
+            ETag: { $ref: './_common.yaml#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tenant' }
+        '400': { $ref: './_common.yaml#/components/responses/BadRequest' }
+        '403': { $ref: './_common.yaml#/components/responses/Forbidden' }
+        '409': { $ref: './_common.yaml#/components/responses/Conflict' }
+
+  /api/v1/tenants/{slug}:
+    get:
+      summary: Lookup tenant by slug (limited fields for non-admin)
+      operationId: getTenantBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9-]+$' }
+      responses:
+        '200':
+          description: Public-fields-only response unless caller is SUPER_ADMIN.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantPublic' }
+        '404': { $ref: './_common.yaml#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerJwt: { $ref: './_common.yaml#/components/securitySchemes/bearerJwt' }
+
+  schemas:
+    Tenant:
+      allOf:
+        - { $ref: './_common.yaml#/components/schemas/Audit' }
+        - type: object
+          required: [id, slug, display_name, status, time_zone, default_locale]
+          properties:
+            id: { type: string, format: uuid }
+            slug: { type: string }
+            legal_name: { type: ['string', 'null'] }
+            display_name: { type: string }
+            status: { type: string, enum: [ACTIVE, SUSPENDED, DELETED] }
+            time_zone: { type: string }
+            default_locale: { type: string }
+            logo_url: { type: ['string', 'null'], format: uri }
+            primary_domain: { type: ['string', 'null'] }
+            brand_color_primary: { type: ['string', 'null'] }
+            brand_color_accent: { type: ['string', 'null'] }
+            billing_email: { type: ['string', 'null'], format: email }
+            support_email: { type: ['string', 'null'], format: email }
+
+    TenantPublic:
+      type: object
+      required: [id, slug, display_name]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        display_name: { type: string }
+        logo_url: { type: ['string', 'null'], format: uri }
+        primary_domain: { type: ['string', 'null'] }
+
+    TenantUpdate:
+      type: object
+      properties:
+        display_name: { type: string }
+        legal_name: { type: ['string', 'null'] }
+        time_zone: { type: string }
+        default_locale: { type: string }
+        logo_url: { type: ['string', 'null'], format: uri }
+        primary_domain: { type: ['string', 'null'] }
+        brand_color_primary: { type: ['string', 'null'] }
+        brand_color_accent: { type: ['string', 'null'] }
+        billing_email: { type: ['string', 'null'], format: email }
+        support_email: { type: ['string', 'null'], format: email }

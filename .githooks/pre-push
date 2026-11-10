@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Block pushes to main and enforce branch naming. Enable with: git config core.hooksPath .githooks
+set -euo pipefail
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  branch="${remote_ref#refs/heads/}"
+  if [[ "$branch" == "main" ]]; then
+    echo "✗ pre-push: pushing to main is not allowed; open a PR from a story branch." >&2
+    exit 1
+  fi
+  if [[ "$remote_ref" == refs/heads/* ]] && ! [[ "$branch" =~ ^(feat|fix|refactor|perf|test|docs|chore|spike|hotfix)/IATS-[0-9]+-[a-z0-9-]+$ ]]; then
+    echo "✗ pre-push: branch '$branch' must be <type>/IATS-<n>-<slug>" >&2
+    exit 1
+  fi
+done
+exit 0

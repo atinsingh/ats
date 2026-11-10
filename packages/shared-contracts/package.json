@@ -1,0 +1,17 @@
+{
+  "name": "@jobocate/shared-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"console.log('@jobocate/shared-contracts: schemas only')\"",
+    "lint": "node -e \"process.exit(0)\"",
+    "dev": "node -e \"process.exit(0)\"",
+    "test": "node -e \"process.exit(0)\""
+  },
+  "description": "Event envelopes, OpenSearch document shapes, and OpenAPI fragments shared across runtimes",
+  "files": [
+    "kafka",
+    "schemas",
+    "openapi"
+  ]
+}
