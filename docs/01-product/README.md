@@ -6,7 +6,8 @@ Documents in this folder describe **what** the platform should do, **for whom**,
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `prd.md` | Top-level product requirements: vision, personas, scope, success metrics, non-goals. | Planned |
+| [`prd.md`](./prd.md) | Product outline: positioning, segments, the four pillars, backlog gaps, phases, success measures. | Draft for review |
+| [`market-and-competitive-research.md`](./market-and-competitive-research.md) | Sourced research (November 2026): ATS functions, competitors, job-board integration, AI hiring evidence and regulation. | Research input |
 | [`functional-requirements.md`](./functional-requirements.md) | The full functional requirements document, organized by module, with acceptance criteria and MVP / post-MVP classification. | Authoritative |
 | `glossary.md` | Canonical product terms (Application vs Submission, Job vs Requisition, Recruiter vs Tenant Admin, etc.). | Planned |
 
