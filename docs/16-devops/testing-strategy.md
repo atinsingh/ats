@@ -301,7 +301,7 @@ The repository CI must enforce the following or block merge:
 | Cross-tenant tests present | regex on test reports | hard fail |
 | Secret scan | `gitleaks` | hard fail |
 | Dependency scan | gradle / pnpm / pip-audit | hard fail on HIGH |
-| Migration apply (greenfield) | Testcontainers Postgres + `infra/sql/greenfield/V1__initial_ats_schema.sql` | hard fail |
+| Migration apply (fresh DB) | Testcontainers Postgres + each service's Flyway migrations | hard fail |
 
 The CI definition lives in `.github/workflows/ci.yml` (planned). Each
 gate maps to one job; gates run in parallel where practical.
@@ -353,8 +353,9 @@ prefer Testcontainers).
 
 ## 16. Test data management
 
-- `infra/sql/greenfield/V1__initial_ats_schema.sql` is the canonical
-  starting point for any test that needs a Postgres schema.
+- Each service's Flyway migrations (`src/main/resources/db/migration/`)
+  are the canonical starting point for any test that needs a Postgres
+  schema.
 - Per-test fixtures live under `src/test/resources/fixtures/`
   (Java), `tests/fixtures/` (Python, Go).
 - Tenants used in tests: `TENANT_A = 11111111-0000-0000-0000-00000000000a`,

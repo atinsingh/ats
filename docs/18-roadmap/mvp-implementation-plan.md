@@ -14,7 +14,7 @@ Everything outside that scope is parked in `post-mvp-roadmap.md`
 
 | ID | Theme | Duration (target) | Exit demo |
 |---|---|---|---|
-| M1 | Platform foundation | 2 wks | `pnpm`, Gradle, compose-dev, CI green; one health-check endpoint per service responds; Flyway greenfield script applies cleanly |
+| M1 | Platform foundation | 2 wks | `pnpm`, Gradle, compose-dev, CI green; one health-check endpoint per service responds; Flyway migrations apply cleanly to an empty database |
 | M2 | Auth, tenant, RBAC | 2 wks | Recruiter signs up → invites a candidate → both log in → both see their own tenant data only |
 | M3 | Job management | 2 wks | Recruiter creates → publishes → updates → closes a job; published job lands in OpenSearch index |
 | M4 | Candidate profile + resume upload | 2 wks | Candidate signs up → uploads resume → parser produces structured fields → candidate reviews & accepts |
@@ -40,7 +40,7 @@ unknowns.
 - Compose-dev profile: Postgres, Kafka (Redpanda), OpenSearch, MinIO.
 - Spring Boot `platform-starter` with `TenantContext`, identity
   filters, `RequestLoggingFilter`, error envelope.
-- Flyway greenfield script `infra/sql/greenfield/V1__initial_ats_schema.sql`.
+- Per-service Flyway migrations that apply cleanly to an empty database.
 - CI workflow with all gates from the testing strategy.
 
 ### Backend tasks
@@ -507,4 +507,4 @@ The MVP is "done" when every checkbox below is true on `main`:
 - [ ] Multi-tenancy strategy checklist is closed (see
       `docs/09-multi-tenancy/tenancy-strategy.md`).
 - [ ] The "definition of done" demo script runs end-to-end against
-      a fresh greenfield database.
+      a fresh database migrated only by Flyway.

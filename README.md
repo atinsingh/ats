@@ -62,7 +62,6 @@ packages/                          Shared TypeScript packages (pnpm workspaces, 
 
 infra/
   docker/                          docker-compose.yml + Dockerfiles for compose-dev
-  sql/greenfield/                  Consolidated V1 schema for fresh-start environments
   observability/                   Collector, Prometheus rules, Grafana dashboards
   terraform/                       Cloud scaffolding (VPC, RDS, MSK, …) — post-MVP
 
@@ -287,10 +286,10 @@ are optional.
 - Flyway migrations live in each owning Java service under
   `src/main/resources/db/migration/`. Each service maintains its
   own `flyway_<service>_schema_history` table.
-- Consolidated greenfield script: [`infra/sql/greenfield/V1__initial_ats_schema.sql`](infra/sql/greenfield/V1__initial_ats_schema.sql)
-  — apply this to a fresh database when bringing up a brand-new
-  environment, then start services normally; per-service `V2+`
-  migrations remain authoritative going forward.
+- Flyway is the only schema source. Start the services against an
+  empty database and each one applies its own migrations
+  (`spring-boot-starter-flyway`, `baseline-version: 0`). There is no
+  separate greenfield script any more (IATS-146).
 - Demo data:
   - Demo tenant: `services-java/ats-core-service/src/main/resources/db/migration/V1__tenants.sql`.
   - Demo jobs: `services-java/job-service/src/main/resources/db/migration/V2__seed_demo_jobs.sql` (and `V3__demo_jobs_compensation.sql`).

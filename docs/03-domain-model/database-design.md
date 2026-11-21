@@ -435,7 +435,7 @@ Existing migrations: `tenants V1`, `candidates V1`, `jobs V1+V2+V3`, `applicatio
 | `notification-service` | `V1__notifications.sql`, `V2__notification_preferences.sql`. |
 | `admin-service` (or new audit module) | `V1__audit_events.sql`. |
 
-Prompt 14 emits the consolidated **`V1__initial_ats_schema.sql`** intended for a brand-new database (a useful artifact for greenfield environments). For *this* repo, we additionally produce the additive V-files above so we don't re-baseline an existing dev DB.
+The per-service Flyway files above are the only schema source. The consolidated `V1__initial_ats_schema.sql` greenfield script was removed in IATS-146; its interview and offer tables now live in application-service `V12__interviews_and_offers.sql`.
 
 ## 15. Retention defaults (sketch — finalized in Compliance docs)
 

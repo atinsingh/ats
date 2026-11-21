@@ -71,6 +71,10 @@ public class CandidateProfileEntity extends AuditableEntity {
     @Column(name = "salary_expectation_max_cents")
     private Long salaryExpectationMaxCents;
 
+    // The column is CHAR(3) in the migrations; Hibernate 7 validation rejects a VARCHAR mapping.
+
+    @JdbcTypeCode(SqlTypes.CHAR)
+
     @Column(name = "currency_code", length = 3)
     private String currencyCode;
 

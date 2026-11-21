@@ -18,6 +18,9 @@ spring:
   flyway:
     table: flyway_candidate_schema_history
     baseline-on-migrate: true
+    # The services share one schema. Baseline below V1 so a service whose history table is new
+    # still runs its own V1 after another service has already created tables (IATS-146).
+    baseline-version: 0
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
     producer:

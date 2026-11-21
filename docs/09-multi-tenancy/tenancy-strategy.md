@@ -54,8 +54,8 @@ tenant **must** be supplied explicitly by the calling service via
 * Composite uniqueness constraints include `tenant_id` so two tenants can
   reuse the same business key (e.g. `unique (tenant_id, slug)` on jobs).
 * Migrations create per-service `flyway_*_schema_history` tables to keep
-  service ownership clear; the consolidated greenfield script lives in
-  `infra/sql/greenfield/V1__initial_ats_schema.sql`.
+  service ownership clear. Flyway is the only schema source; there is no
+  consolidated greenfield script (IATS-146).
 
 ## 3. Search-gateway
 
