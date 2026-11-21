@@ -43,19 +43,23 @@ def run() -> int:
     signal.signal(signal.SIGINT, _handle_sig)
     signal.signal(signal.SIGTERM, _handle_sig)
 
+    crashed: list[str] = []
     threads = []
     for handler in handlers:
-        consumer, producer, commit_offset = kafka_clients(handler, settings.brokers)
 
-        def _run(h: Handler = handler, c: Any = consumer, p: Any = producer, co: Any = commit_offset) -> None:
+        def _run(h: Handler = handler) -> None:
+            clients = None
             try:
-                consume(h, c, p, stop, co)
+                clients = kafka_clients(h, settings.brokers)
+                consume(h, clients[0], clients[1], stop, clients[2])
             except Exception:
                 log.exception("handler_crashed handler=%s", h.name)
-                stop.set()  # one handler down takes the process down so the orchestrator restarts it
+                crashed.append(h.name)
+                stop.set()  # one handler down stops the process, which exits non-zero so it is restarted
             finally:
-                c.close()
-                p.close()
+                if clients:
+                    clients[0].close()
+                    clients[1].close()
 
         t = threading.Thread(target=_run, name=handler.name, daemon=True)
         t.start()
@@ -64,4 +68,7 @@ def run() -> int:
     log.info("running handlers=%s", [h.name for h in handlers])
     for t in threads:
         t.join()
+    if crashed:
+        log.error("exiting_after_crash handlers=%s", crashed)
+        return 1
     return 0

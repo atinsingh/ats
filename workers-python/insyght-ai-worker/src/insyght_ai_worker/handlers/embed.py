@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from insyght_ai_worker.config import Settings
 from insyght_ai_worker.gateway import AiGateway
 from insyght_ai_worker.runtime import Handler, Outgoing
+
+log = logging.getLogger("insyght-ai-worker.embed")
 
 
 def build(settings: Settings, gateway: AiGateway) -> Handler:
@@ -15,6 +18,10 @@ def build(settings: Settings, gateway: AiGateway) -> Handler:
     def handle(raw: str) -> list[Outgoing]:
         payload = json.loads(raw)
         tenant_id = payload.get("tenant_id")
+        if not tenant_id:
+            # Every event and model call is tenant-scoped (AGENTS.md); the old worker embedded these anyway.
+            log.warning("embed_skipped_no_tenant target=%s", payload.get("target"))
+            return []
         embedding = gateway.embed(tenant_id=tenant_id, text=str(payload.get("text", "")))
         out = {
             "type": "EMBEDDING_READY",
@@ -23,7 +30,7 @@ def build(settings: Settings, gateway: AiGateway) -> Handler:
             "vector": embedding.vector,
             "model": embedding.model,
         }
-        return [Outgoing(out_topic, out, key=str(tenant_id or ""))]
+        return [Outgoing(out_topic, out, key=tenant_id)]
 
     return Handler(
         name="embed",

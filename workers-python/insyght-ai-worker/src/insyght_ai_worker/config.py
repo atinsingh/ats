@@ -29,7 +29,7 @@ class Settings:
         env = os.environ if env is None else env
 
         def get(name: str, default: str) -> str:
-            return (env.get(name) or default).strip()
+            return env.get(name, default).strip()
 
         requested = tuple(
             h.strip() for h in get("INSYGHT_AI_WORKER_HANDLERS", ",".join(ALL_HANDLERS)).split(",") if h.strip()

@@ -63,7 +63,7 @@ class AiGateway(Protocol):
         context: Mapping[str, Any],
     ) -> GeneratedArtifact: ...
 
-    def embed(self, *, tenant_id: str | None, text: str) -> Embedding: ...
+    def embed(self, *, tenant_id: str, text: str) -> Embedding: ...
 
 
 class StubGateway:
@@ -88,7 +88,7 @@ class StubGateway:
             prompt_version=self.prompt_version,
         )
 
-    def embed(self, *, tenant_id: str | None, text: str) -> Embedding:
+    def embed(self, *, tenant_id: str, text: str) -> Embedding:
         return Embedding(vector=_pseudo_embedding(text), model=self.embedding_model)
 
 

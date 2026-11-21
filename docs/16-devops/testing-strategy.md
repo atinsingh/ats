@@ -319,7 +319,7 @@ gate maps to one job; gates run in parallel where practical.
 cd services-go/search-gateway && go test ./...
 
 # Python worker
-cd workers-python/resume-parser-worker && PYTHONPATH=src pytest
+cd workers-python/insyght-ai-worker && PYTHONPATH=src pytest
 
 # TypeScript
 pnpm -r tsc --noEmit

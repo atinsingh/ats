@@ -2,8 +2,10 @@ import json
 import threading
 
 import orjson
+import pytest
 from conftest import FakeConsumer, FakeMessage, FakeProducer
 
+from insyght_ai_worker import app
 from insyght_ai_worker.app import build_handlers
 from insyght_ai_worker.config import Settings
 from insyght_ai_worker.gateway import Embedding, GeneratedArtifact, StubGateway
@@ -15,7 +17,7 @@ RESUME_EVENT = {
     "resume_id": "11111111-1111-1111-1111-111111111111",
     "candidate_id": "22222222-2222-2222-2222-222222222222",
     "tenant_id": TENANT,
-    "s3_key": "tenants/x/candidates/y/resumes/z/alex_lee_resume.pdf",
+    "s3_key": f"tenants/{TENANT}/candidates/y/resumes/z/alex_lee_resume.pdf",
     "mime_type": "application/pdf",
 }
 
@@ -145,3 +147,61 @@ def test_all_handlers_build_with_the_stub_gateway():
 def test_keys_are_encoded_for_kafka():
     assert encode_key("abc") == b"abc"
     assert encode_key(None) is None
+
+
+def test_parse_resume_for_another_tenants_object_emits_failed_event(settings, no_s3):
+    evt = dict(RESUME_EVENT, s3_key="tenants/someone-else/candidates/y/resumes/z/cv.pdf")
+    _, producer = _run(parse_resume.build(settings, s3=no_s3), [FakeMessage(json.dumps(evt), offset=0)])
+    [(_topic, _key, value)] = producer.sent
+    assert value["failed"] is True
+
+
+def test_parse_resume_skips_events_without_tenant(settings, no_s3):
+    evt = {k: v for k, v in RESUME_EVENT.items() if k != "tenant_id"}
+    consumer, producer = _run(parse_resume.build(settings, s3=no_s3), [FakeMessage(json.dumps(evt), offset=3)])
+    assert producer.sent == []
+    assert consumer.commits == [{"tp-0": 4}]
+
+
+def test_embed_skips_requests_without_tenant(settings):
+    gw = RecordingGateway()
+    _, producer = _run(embed.build(settings, gw), [FakeMessage(json.dumps({"text": "x"}), offset=0)])
+    assert gw.calls == []
+    assert producer.sent == []
+
+
+def test_manual_commit_happens_after_the_producer_flushes(settings, no_s3):
+    events = []
+
+    class OrderedProducer(FakeProducer):
+        def flush(self):
+            events.append("flush")
+
+    class OrderedConsumer(FakeConsumer):
+        def commit(self, offsets):
+            events.append("commit")
+
+    stop = threading.Event()
+    consumer = OrderedConsumer(polls=[{"tp-0": [FakeMessage(json.dumps(RESUME_EVENT), offset=0)]}], stop=stop)
+    consume(parse_resume.build(settings, s3=no_s3), consumer, OrderedProducer(), stop, lambda n: n, 0)
+    assert events[:2] == ["flush", "commit"]
+
+
+def test_run_exits_non_zero_when_a_handler_crashes(monkeypatch):
+    def no_broker(*_args):
+        raise RuntimeError("no brokers available")
+
+    monkeypatch.setenv("INSYGHT_AI_WORKER_HANDLERS", "embed")
+    monkeypatch.setattr(app, "kafka_clients", no_broker)
+    monkeypatch.setattr(app.signal, "signal", lambda *_a: None)
+    assert app.run() == 1
+
+
+def test_empty_internal_token_is_not_replaced_by_the_dev_default():
+    assert Settings.from_env({"JOBOCATE_INTERNAL_TOKEN": ""}).internal_token == ""
+
+
+@pytest.mark.parametrize("name", ["parse_resume", "embed", "generate_artifact"])
+def test_each_handler_can_run_alone(name):
+    handlers = build_handlers(Settings.from_env({"INSYGHT_AI_WORKER_HANDLERS": name}), StubGateway())
+    assert [h.name for h in handlers] == [name]

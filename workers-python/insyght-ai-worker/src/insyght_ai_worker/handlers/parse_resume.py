@@ -7,6 +7,7 @@ Regex and heuristics only; no model call yet. When a model-based parser arrives 
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from typing import Any
 
@@ -25,6 +26,12 @@ from insyght_ai_worker.runtime import Handler, Outgoing
 
 PARSER_VERSION = "0.2.0"
 
+log = logging.getLogger("insyght-ai-worker.parse_resume")
+
+
+class TenantMismatchError(ValueError):
+    """The resume object key is outside the event tenant's storage prefix."""
+
 
 def parse_resume_upload_event(
     payload: dict[str, Any], *, settings: S3Settings | None = None
@@ -35,7 +42,12 @@ def parse_resume_upload_event(
     """
     s3_key = str(payload.get("s3_key", ""))
     mime_type = payload.get("mime_type")
+    tenant_id = payload.get("tenant_id")
     settings = settings or S3Settings.from_env()
+
+    # candidate-service stores resumes under tenants/{tenant_id}/... Never read another tenant's object.
+    if s3_key and not s3_key.startswith(f"tenants/{tenant_id}/"):
+        raise TenantMismatchError(f"s3_key is outside tenants/{tenant_id}/")
 
     raw_text = fetch_object_text(settings, s3_key, mime_type) if s3_key else ""
     if not raw_text:
@@ -50,7 +62,7 @@ def parse_resume_upload_event(
         "event_id": str(uuid.uuid4()),
         "resume_id": payload.get("resume_id"),
         "candidate_id": payload.get("candidate_id"),
-        "tenant_id": payload.get("tenant_id"),
+        "tenant_id": tenant_id,
         "s3_key": s3_key,
         "full_name": guess_full_name(raw_text),
         "email": extract_email(raw_text),
@@ -92,7 +104,11 @@ def build(settings: Settings, s3: S3Settings | None = None) -> Handler:
     out_topic = settings.resume_out_topic
 
     def handle(raw: str) -> list[Outgoing]:
-        parsed = parse_resume_upload_event(json.loads(raw), settings=s3)
+        payload = json.loads(raw)
+        if not payload.get("tenant_id"):
+            log.warning("parse_skipped_no_tenant resume_id=%s", payload.get("resume_id"))
+            return []
+        parsed = parse_resume_upload_event(payload, settings=s3)
         return [Outgoing(out_topic, parsed, key=parsed.get("candidate_id") or parsed.get("resume_id"))]
 
     def on_error(raw: str) -> list[Outgoing]:
