@@ -10,7 +10,7 @@ System architecture, deployment topology, technology choices, and the **current 
 | [`backend-modular-architecture.md`](./backend-modular-architecture.md) | Spring Boot module map: responsibilities, package layout, dependency rules, security and tenancy boundaries. | Authoritative |
 | `system-architecture.md` | Macro view: clients → BFF → APIs → DB / Kafka / OpenSearch / S3, with deployment topology. | Planned |
 | `frontend-architecture.md` | Next.js App Router layout, BFF routes, server vs client components, data fetching strategy. | Planned |
-| `adr/` | Architecture Decision Records (ADR-0001…). | Planned |
+| [`adr/`](./adr/) | Architecture Decision Records. [ADR-0001](./adr/ADR-0001-modular-monolith.md): run the Java backend as one modular monolith. | Active |
 
 ## Tech stack (target)
 
