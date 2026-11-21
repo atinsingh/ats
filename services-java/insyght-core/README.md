@@ -15,6 +15,7 @@ types or creates a dependency cycle. To expose something to other modules, put i
 or a named interface (`@NamedInterface`).
 
 Outside the `local` profile the app needs `JOBOCATE_JWT_SECRET` and `JOBOCATE_INTERNAL_TOKEN` and will not start
-without them. Only `/actuator/health` is public; other actuator endpoints need the internal token.
+without them. Only `/actuator/health` is public. Other actuator endpoints, including `/actuator/prometheus`, need a SUPER_ADMIN
+token (the internal token only works on `/internal/**`).
 
 The modules are empty until IATS-136 to IATS-142 move each service in.
