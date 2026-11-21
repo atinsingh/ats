@@ -20,7 +20,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.flywaydb:flyway-core")
+    // Spring Boot 4 moved Flyway auto-configuration into its own module; without it no migration runs.
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.postgresql:postgresql")
     implementation("io.micrometer:micrometer-registry-prometheus")

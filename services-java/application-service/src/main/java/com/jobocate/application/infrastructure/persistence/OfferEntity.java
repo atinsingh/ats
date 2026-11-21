@@ -15,6 +15,8 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** Post-MVP placeholder for compensation offers. */
 @Entity
@@ -44,6 +46,8 @@ public class OfferEntity extends AuditableEntity {
 
     @NotNull
     @Size(min = 3, max = 3)
+    // The column is CHAR(3) in the migrations; Hibernate 7 validation rejects a VARCHAR mapping.
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "currency_code", nullable = false, length = 3)
     private String currencyCode;
 
