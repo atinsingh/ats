@@ -2,6 +2,7 @@ package com.jobocate.core;
 
 import com.jobocate.platform.security.JobocateSecurityProperties;
 import com.jobocate.platform.security.JobocateSecuritySupport;
+import com.jobocate.platform.security.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,7 +33,16 @@ class CoreSecurityConfig {
         JobocateSecurityProperties props =
                 new JobocateSecurityProperties(jwtSecret, allowDevHeader, internalToken, null);
         JobocateSecuritySupport.applyDefaults(http, props);
-        http.authorizeHttpRequests(JobocateSecuritySupport::defaultRules);
+        // Written out instead of JobocateSecuritySupport.defaultRules, which also opens
+        // /actuator/** and /api/auth/** to everyone. Each new public path is a deliberate change here.
+        http.authorizeHttpRequests(
+                reg ->
+                        reg.requestMatchers("/actuator/health", "/actuator/health/**", "/error")
+                                .permitAll()
+                                .requestMatchers("/actuator/**", "/internal/**")
+                                .hasRole(Role.SUPER_ADMIN.name())
+                                .anyRequest()
+                                .authenticated());
         return http.build();
     }
 }

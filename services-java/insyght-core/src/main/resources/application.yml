@@ -30,8 +30,10 @@ management:
       probes:
         enabled: true
 
+# No fallbacks for secrets: the app refuses to start without them. Local values live in
+# application-local.yml (SPRING_PROFILES_ACTIVE=local).
 jobocate:
   security:
-    jwt-secret: ${JOBOCATE_JWT_SECRET:jobocate-local-jwt-secret-change-me!!!}
+    jwt-secret: ${JOBOCATE_JWT_SECRET}
     allow-dev-tenant-header: ${JOBOCATE_ALLOW_HEADER_TENANT:false}
-  internal-token: ${JOBOCATE_INTERNAL_TOKEN:jobocate-internal-dev-token}
+  internal-token: ${JOBOCATE_INTERNAL_TOKEN}

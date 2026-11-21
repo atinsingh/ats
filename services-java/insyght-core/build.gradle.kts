@@ -16,8 +16,6 @@ java {
 
 dependencyManagement {
     imports {
-        // Keep Spring Boot's own BOM: declaring imports here would otherwise replace it.
-        mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
         // Spring Modulith 2.0.x is the line built for Spring Boot 4.0. Apache License 2.0.
         mavenBom("org.springframework.modulith:spring-modulith-bom:${libs.versions.spring.modulith.get()}")
     }
@@ -36,8 +34,9 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
-    testImplementation(libs.testcontainers.junit)
-    testImplementation(libs.testcontainers.postgresql)
+    // Testcontainers 2.x, versioned by the Spring Boot 4 BOM. The 1.20 catalog entries would mix 1.x and 2.x jars.
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
 }
 
 tasks.withType<Test> {
