@@ -1,0 +1,37 @@
+server:
+  port: ${INSYGHT_CORE_PORT:8080}
+
+spring:
+  application:
+    name: insyght-core
+  autoconfigure:
+    # Identity comes from tokens (TenantIdentityFilter), never from a generated in-memory user.
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jobocate}
+    username: ${SPRING_DATASOURCE_USERNAME:jobocate}
+    password: ${SPRING_DATASOURCE_PASSWORD:jobocate_local_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schemas are owned by Flyway per module (IATS-144); never let Hibernate change them.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+jobocate:
+  security:
+    jwt-secret: ${JOBOCATE_JWT_SECRET:jobocate-local-jwt-secret-change-me!!!}
+    allow-dev-tenant-header: ${JOBOCATE_ALLOW_HEADER_TENANT:false}
+  internal-token: ${JOBOCATE_INTERNAL_TOKEN:jobocate-internal-dev-token}
