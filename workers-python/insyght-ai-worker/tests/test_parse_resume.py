@@ -1,6 +1,5 @@
-from resume_parser_worker.kafka_worker import parse_resume_upload_event
-from resume_parser_worker.storage import S3Settings
-
+from insyght_ai_worker.handlers.parse_resume import parse_resume_upload_event
+from insyght_ai_worker.resume.storage import S3Settings
 
 DISABLED_S3 = S3Settings(
     enabled=False,

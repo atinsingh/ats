@@ -1,81 +1,19 @@
-"""Pure-python rendering layer for the AI artifact worker.
+"""Deterministic artifact text used by the stub AI gateway.
 
-`AiProvider` is the integration seam — production deployments inject an
-OpenAI / Anthropic / Vertex client, while CI and local development use
-`StubProvider` to keep tests deterministic and free of network calls.
+Moved from ai-artifact-worker. It keeps the output shape of each `AiArtifactKind` so the UI can
+be built before any model keys exist. Only `gateway.StubGateway` calls it.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Protocol
-
-
-@dataclass(frozen=True)
-class GeneratedArtifact:
-    """What we POST back to application-service /internal/v1/ai-artifacts/{id}/result."""
-
-    output_text: str | None
-    output_s3_key: str | None
-    model_version: str
-    prompt_version: str
-
-    def to_payload(self, idempotency_key: str | None = None) -> dict[str, Any]:
-        body: dict[str, Any] = {
-            "model_version": self.model_version,
-            "prompt_version": self.prompt_version,
-        }
-        if self.output_text is not None:
-            body["outputText"] = self.output_text
-        if self.output_s3_key is not None:
-            body["outputS3Key"] = self.output_s3_key
-        if idempotency_key is not None:
-            body["idempotencyKey"] = idempotency_key
-        return body
-
-
-class AiProvider(Protocol):
-    """Contract every provider plug-in must implement."""
-
-    model_id: str
-    prompt_version: str
-
-    def generate(
-        self, *, kind: str, inputs: Mapping[str, Any], context: Mapping[str, Any]
-    ) -> GeneratedArtifact: ...
-
-
-class StubProvider:
-    """Deterministic, offline provider used by tests + local dev.
-
-    Output shape mirrors the canonical contract for each `AiArtifactKind` so
-    UIs can be wired against realistic skeletons before any LLM keys are
-    added to the deployment.
-    """
-
-    model_id = "stub-2026-01"
-    prompt_version = "v1"
-
-    def generate(
-        self, *, kind: str, inputs: Mapping[str, Any], context: Mapping[str, Any]
-    ) -> GeneratedArtifact:
-        text = render_artifact(kind, inputs, context)
-        return GeneratedArtifact(
-            output_text=text,
-            output_s3_key=None,
-            model_version=self.model_id,
-            prompt_version=self.prompt_version,
-        )
+from collections.abc import Mapping
+from typing import Any
 
 
 def render_artifact(
     kind: str, inputs: Mapping[str, Any], context: Mapping[str, Any]
 ) -> str:
-    """Deterministic text renderer per AI artifact kind.
-
-    Production swaps this for an LLM call; the function is exported so the
-    same output schema is shared between `StubProvider` and unit tests.
-    """
+    """Deterministic text renderer per AI artifact kind."""
 
     candidate_name = str(inputs.get("candidate_name", "Candidate")).strip() or "Candidate"
     job_title = str(inputs.get("job_title", "the role")).strip() or "the role"
