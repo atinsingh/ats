@@ -1,7 +1,7 @@
 package com.jobocate.searchorch.infrastructure.kafka;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import org.springframework.kafka.annotation.RetryableTopic;
 import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.retry.annotation.Backoff;
+import org.springframework.kafka.annotation.BackOff;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -72,7 +72,7 @@ public class JobSearchProjectionListener {
 
     @RetryableTopic(
             attempts = "3",
-            backoff = @Backoff(delay = 2000, multiplier = 2.0),
+            backOff = @BackOff(delay = 2000, multiplier = 2.0),
             dltStrategy = DltStrategy.FAIL_ON_ERROR,
             autoCreateTopics = "true")
     @KafkaListener(topics = "${jobocate.kafka.job-events-topic}")
@@ -310,7 +310,7 @@ public class JobSearchProjectionListener {
         JsonNode facets = node.path("facets");
         if (facets.isObject()) {
             Map<String, Object> facetMap = new HashMap<>();
-            facets.fields().forEachRemaining(e -> facetMap.put(e.getKey(), e.getValue().asText()));
+            facets.properties().forEach(e -> facetMap.put(e.getKey(), e.getValue().asText()));
             doc.put("facets", facetMap);
         }
 

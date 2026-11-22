@@ -25,6 +25,8 @@ dependencies {
     testImplementation("io.jsonwebtoken:jjwt-impl:0.12.6")
     testImplementation("io.jsonwebtoken:jjwt-jackson:0.12.6")
     testImplementation("jakarta.servlet:jakarta.servlet-api")
+    // JUnit 6 (from the Boot 4 BOM) needs a matching launcher; Gradle's bundled one is older.
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<Test> {

@@ -1,6 +1,6 @@
 package com.jobocate.job.infrastructure.events;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.jobocate.job.infrastructure.persistence.EventOutboxEntity;
 import com.jobocate.job.infrastructure.persistence.EventOutboxJpaRepository;
 import java.time.Duration;

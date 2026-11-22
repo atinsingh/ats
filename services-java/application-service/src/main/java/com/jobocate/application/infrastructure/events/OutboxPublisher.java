@@ -1,7 +1,7 @@
 package com.jobocate.application.infrastructure.events;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.jobocate.application.infrastructure.persistence.EventOutboxEntity;
 import com.jobocate.application.infrastructure.persistence.EventOutboxJpaRepository;
 import java.time.Duration;
@@ -98,7 +98,7 @@ public class OutboxPublisher {
     private static String safeJson(ObjectMapper om, Object o) {
         try {
             return om.writeValueAsString(o);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             return "{}";
         }
     }

@@ -169,6 +169,30 @@ public class CandidateProfileEntity extends AuditableEntity {
         this.availability = availability;
     }
 
+    public String getLocationCity() {
+        return locationCity;
+    }
+
+    public void setLocationCity(String locationCity) {
+        this.locationCity = locationCity;
+    }
+
+    public String getLocationRegion() {
+        return locationRegion;
+    }
+
+    public void setLocationRegion(String locationRegion) {
+        this.locationRegion = locationRegion;
+    }
+
+    public String getLocationCountry() {
+        return locationCountry;
+    }
+
+    public void setLocationCountry(String locationCountry) {
+        this.locationCountry = locationCountry;
+    }
+
     public Instant getDeletedAt() {
         return deletedAt;
     }

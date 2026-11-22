@@ -20,7 +20,7 @@ public class LoggingEmailDispatcher {
 
     @Bean
     @ConditionalOnMissingBean(EmailDispatcher.class)
-    public EmailDispatcher loggingEmailDispatcher() {
+    public EmailDispatcher defaultEmailDispatcher() {
         return msg -> {
             String providerId = "log-" + UUID.randomUUID();
             log.info(

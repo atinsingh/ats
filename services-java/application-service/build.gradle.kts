@@ -28,6 +28,8 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // Boot 4 moved the MockMvc test auto-configuration into its own module.
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.postgresql)
 }

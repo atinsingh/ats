@@ -93,7 +93,7 @@ public class S3ResumeStorage implements ResumeStorage {
                                 .putObjectRequest(put)
                                 .build());
 
-        return new UploadTarget(signed.url().toURI(), objectKey, signed.expiration());
+        return new UploadTarget(toUri(signed.url()), objectKey, signed.expiration());
     }
 
     @Override
@@ -106,7 +106,7 @@ public class S3ResumeStorage implements ResumeStorage {
                                 .signatureDuration(effectiveTtl)
                                 .getObjectRequest(get)
                                 .build());
-        return new SignedDownload(signed.url().toURI(), signed.expiration());
+        return new SignedDownload(toUri(signed.url()), signed.expiration());
     }
 
     @Override
@@ -131,5 +131,13 @@ public class S3ResumeStorage implements ResumeStorage {
     private static String nonNull(String v, String err) {
         if (v == null || v.isBlank()) throw new IllegalStateException(err);
         return v;
+    }
+
+    private static URI toUri(java.net.URL url) {
+        try {
+            return url.toURI();
+        } catch (java.net.URISyntaxException e) {
+            throw new IllegalStateException("presigned URL is not a valid URI", e);
+        }
     }
 }

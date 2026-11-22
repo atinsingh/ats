@@ -1,7 +1,7 @@
 package com.jobocate.candidate.infrastructure.events;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.jobocate.candidate.application.ResumeService;
 import com.jobocate.candidate.infrastructure.persistence.ResumeParsedFieldsEntity;
 import io.micrometer.core.instrument.Counter;
@@ -115,7 +115,7 @@ public class ResumeParsedListener {
 
     private static Map<String, Object> toMap(JsonNode node) {
         Map<String, Object> out = new HashMap<>();
-        node.fields().forEachRemaining(e -> {
+        node.properties().forEach(e -> {
             JsonNode v = e.getValue();
             if (v.isTextual()) out.put(e.getKey(), v.asText());
             else if (v.isNumber()) out.put(e.getKey(), v.numberValue());
