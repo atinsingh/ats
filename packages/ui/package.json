@@ -6,12 +6,16 @@
     "build": "node -e \"console.log('@jobocate/ui: consumed via Next transpilePackages')\"",
     "lint": "node -e \"process.exit(0)\"",
     "dev": "node -e \"process.exit(0)\"",
-    "test": "node -e \"process.exit(0)\""
+    "test": "node --test test/*.test.ts",
+    "tokens": "node scripts/build-tokens.ts"
   },
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./lib/utils": "./src/lib/utils.ts"
+    "./lib/utils": "./src/lib/utils.ts",
+    "./tokens": "./src/tokens.ts",
+    "./tailwind-preset": "./tailwind-preset.ts",
+    "./styles/tokens.css": "./src/styles/tokens.css"
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -24,6 +28,8 @@
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
-    "typescript": "^5.7.0"
-  }
+    "typescript": "^5.7.0",
+    "@types/node": "^22.10.0"
+  },
+  "type": "module"
 }
