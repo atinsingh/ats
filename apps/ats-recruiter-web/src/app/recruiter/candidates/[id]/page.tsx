@@ -31,7 +31,10 @@ export default async function CandidateDetailPage({
   if (!cfg.candidateServiceUrl) {
     return (
       <RecruiterShell title="Candidate">
-        <MissingConfig envName="NEXT_PUBLIC_CANDIDATE_SERVICE_URL" example="http://localhost:8083" />
+        <MissingConfig
+          envName="NEXT_PUBLIC_CANDIDATE_SERVICE_URL"
+          example="http://localhost:8083"
+        />
       </RecruiterShell>
     );
   }
@@ -72,7 +75,7 @@ export default async function CandidateDetailPage({
   if (!candidate) {
     return (
       <RecruiterShell title="Candidate not found">
-        <Link href="/recruiter/jobs" className="text-sm text-slate-700 hover:underline">
+        <Link href="/recruiter/jobs" className="text-sm text-foreground hover:underline">
           ← Back
         </Link>
       </RecruiterShell>
@@ -90,29 +93,29 @@ export default async function CandidateDetailPage({
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
           {application && cfg.applicationServiceUrl ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-base font-semibold">Current application</h2>
                 <Link
                   href={`/recruiter/jobs/${application.jobId}/applications`}
-                  className="text-sm text-slate-600 hover:underline"
+                  className="text-sm text-muted-foreground hover:underline"
                 >
                   View pipeline →
                 </Link>
               </div>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Job:{' '}
                 <Link
                   href={`/recruiter/jobs/${application.jobId}`}
-                  className="font-medium text-slate-900 hover:underline"
+                  className="font-medium text-foreground hover:underline"
                 >
                   {application.jobTitle ?? application.jobId}
                 </Link>
               </p>
               {application.coverLetterText ? (
-                <details className="mt-3 rounded-lg bg-slate-50 p-3 text-sm">
-                  <summary className="cursor-pointer text-slate-700">Cover letter</summary>
-                  <p className="mt-2 whitespace-pre-wrap text-slate-700">
+                <details className="mt-3 rounded-lg bg-background p-3 text-sm">
+                  <summary className="cursor-pointer text-foreground">Cover letter</summary>
+                  <p className="mt-2 whitespace-pre-wrap text-foreground">
                     {application.coverLetterText}
                   </p>
                 </details>
@@ -130,7 +133,7 @@ export default async function CandidateDetailPage({
 
           {candidate.summary ? (
             <Section title="Summary">
-              <p className="whitespace-pre-wrap text-sm text-slate-700">{candidate.summary}</p>
+              <p className="whitespace-pre-wrap text-sm text-foreground">{candidate.summary}</p>
             </Section>
           ) : null}
 
@@ -140,7 +143,7 @@ export default async function CandidateDetailPage({
                 {candidate.skills.map((s) => (
                   <li
                     key={s}
-                    className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+                    className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground"
                   >
                     {s}
                   </li>
@@ -153,13 +156,13 @@ export default async function CandidateDetailPage({
             <Section title="Timeline">
               <ol className="space-y-3 text-sm" role="list">
                 {timeline.map((t) => (
-                  <li key={t.id} className="rounded-lg border border-slate-200 bg-white p-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                  <li key={t.id} className="rounded-lg border border-border bg-card p-3">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
                       {new Date(t.createdAt).toLocaleString()}
                     </p>
-                    <p className="mt-1 font-medium text-slate-800">{t.summary ?? t.entryType}</p>
+                    <p className="mt-1 font-medium text-foreground">{t.summary ?? t.entryType}</p>
                     {t.fromValue || t.toValue ? (
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         {t.fromValue ?? '—'} → {t.toValue ?? '—'}
                         {t.actorRole ? ` · ${t.actorRole.toLowerCase()}` : ''}
                       </p>
@@ -172,22 +175,28 @@ export default async function CandidateDetailPage({
         </div>
 
         <aside className="space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-base font-semibold">Profile</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <Row label="Email" value={candidate.email} />
               <Row
                 label="Location"
-                value={[candidate.locationCity, candidate.locationRegion, candidate.locationCountry]
-                  .filter(Boolean)
-                  .join(', ') || '—'}
+                value={
+                  [candidate.locationCity, candidate.locationRegion, candidate.locationCountry]
+                    .filter(Boolean)
+                    .join(', ') || '—'
+                }
               />
-              <Row label="Visibility" value={candidate.visibility.replace('_', ' ').toLowerCase()} />
+              <Row
+                label="Visibility"
+                value={candidate.visibility.replace('_', ' ').toLowerCase()}
+              />
               <Row label="Availability" value={candidate.availability ?? '—'} />
               <Row
                 label="Salary expectation"
                 value={
-                  candidate.salaryExpectationMinCents != null && candidate.salaryExpectationMaxCents != null
+                  candidate.salaryExpectationMinCents != null &&
+                  candidate.salaryExpectationMaxCents != null
                     ? `${(candidate.salaryExpectationMinCents / 100).toLocaleString()} – ${(candidate.salaryExpectationMaxCents / 100).toLocaleString()} ${candidate.currencyCode ?? ''}`
                     : '—'
                 }
@@ -196,9 +205,9 @@ export default async function CandidateDetailPage({
             </dl>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-base font-semibold">Resume</h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-muted-foreground">
               Resumes load via the candidate-service detail endpoint. Wire the viewer next.
             </p>
           </div>
@@ -210,7 +219,7 @@ export default async function CandidateDetailPage({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
       <h2 className="text-base font-semibold">{title}</h2>
       <div className="mt-3">{children}</div>
     </div>
@@ -220,8 +229,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="font-medium text-slate-800">{value}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-medium text-foreground">{value}</dd>
     </div>
   );
 }

@@ -32,7 +32,7 @@ function CodeBlock({ children }: { children: string }) {
 export default function DeveloperHubPage() {
   return (
     <div className="space-y-8 pb-12 sm:space-y-10">
-      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 text-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950 text-white shadow-sm">
         <div className="grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)] lg:items-center">
           <div className="min-w-0">
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-rose-300">
@@ -120,7 +120,7 @@ export default function DeveloperHubPage() {
 
       <section
         aria-labelledby="contracts-heading"
-        className="grid gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.7fr)]"
+        className="grid gap-6 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.7fr)]"
       >
         <div className="min-w-0">
           <h2
@@ -190,7 +190,7 @@ export default function DeveloperHubPage() {
 
       <section
         aria-labelledby="delivery-heading"
-        className="rounded-2xl border border-slate-800 bg-slate-950 p-5 text-white sm:p-8"
+        className="rounded-xl border border-slate-800 bg-slate-950 p-5 text-white sm:p-8"
       >
         <div className="max-w-3xl">
           <h2 id="delivery-heading" className="text-2xl font-semibold tracking-tight">

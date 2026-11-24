@@ -1,9 +1,5 @@
 import Link from 'next/link';
-import {
-  JobocateHttpError,
-  createJobocateClient,
-  type Job,
-} from '@jobocate/api-sdk';
+import { JobocateHttpError, createJobocateClient, type Job } from '@jobocate/api-sdk';
 import {
   EmptyState,
   ErrorBanner,
@@ -17,11 +13,7 @@ type SP = { status?: string };
 
 export const dynamic = 'force-dynamic';
 
-export default async function JobsListPage({
-  searchParams,
-}: {
-  searchParams: Promise<SP>;
-}) {
+export default async function JobsListPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const cfg = readRecruiterConfig();
   if (!cfg.jobServiceUrl) {
@@ -59,7 +51,7 @@ export default async function JobsListPage({
       actions={
         <Link
           href="/recruiter/jobs/new"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
         >
           + New job
         </Link>
@@ -81,16 +73,16 @@ export default async function JobsListPage({
           cta={
             <Link
               href="/recruiter/jobs/new"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               + New job
             </Link>
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+            <thead className="bg-background text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Location</th>
@@ -101,27 +93,29 @@ export default async function JobsListPage({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {jobs.map((j) => (
-                <tr key={j.id} className="hover:bg-slate-50">
+                <tr key={j.id} className="hover:bg-muted">
                   <td className="px-4 py-3">
                     <Link
                       href={`/recruiter/jobs/${j.id}`}
-                      className="font-medium text-slate-900 hover:text-slate-700"
+                      className="font-medium text-foreground hover:text-foreground"
                     >
                       {j.title}
                     </Link>
                     {j.department ? (
-                      <p className="text-xs text-slate-500">{j.department}</p>
+                      <p className="text-xs text-muted-foreground">{j.department}</p>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">
+                  <td className="px-4 py-3 text-foreground">
                     {j.location ?? composeLocation(j) ?? '—'}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{j.employmentType ?? '—'}</td>
-                  <td className="px-4 py-3"><StatusPill status={j.status} /></td>
+                  <td className="px-4 py-3 text-foreground">{j.employmentType ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <StatusPill status={j.status} />
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/recruiter/jobs/${j.id}/applications`}
-                      className="text-sm font-medium text-slate-700 hover:underline"
+                      className="text-sm font-medium text-foreground hover:underline"
                     >
                       Applicants →
                     </Link>
@@ -152,8 +146,8 @@ function StatusFilterChip({
       href={href}
       className={
         isActive
-          ? 'rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white'
-          : 'rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50'
+          ? 'rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground'
+          : 'rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground hover:bg-muted'
       }
     >
       {label}

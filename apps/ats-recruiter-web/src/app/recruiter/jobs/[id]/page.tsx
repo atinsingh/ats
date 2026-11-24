@@ -1,9 +1,5 @@
 import Link from 'next/link';
-import {
-  JobocateHttpError,
-  createJobocateClient,
-  type Job,
-} from '@jobocate/api-sdk';
+import { JobocateHttpError, createJobocateClient, type Job } from '@jobocate/api-sdk';
 import {
   ErrorBanner,
   MissingConfig,
@@ -47,7 +43,7 @@ export default async function JobDetailPage({
     if (e instanceof JobocateHttpError && e.status === 404) {
       return (
         <RecruiterShell title="Job not found">
-          <Link href="/recruiter/jobs" className="text-sm text-slate-700 hover:underline">
+          <Link href="/recruiter/jobs" className="text-sm text-foreground hover:underline">
             ← Back to jobs
           </Link>
         </RecruiterShell>
@@ -72,7 +68,7 @@ export default async function JobDetailPage({
         <>
           <Link
             href={`/recruiter/jobs/${job.id}/applications`}
-            className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted"
           >
             View applicants
           </Link>
@@ -81,8 +77,9 @@ export default async function JobDetailPage({
       }
     >
       {sp.publishError ? (
-        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          Job saved as draft. Publishing failed — make sure title, description, and employment type are filled in.
+        <div className="mb-6 rounded-xl border border-warning/40 bg-warning-soft p-4 text-sm text-warning">
+          Job saved as draft. Publishing failed — make sure title, description, and employment type
+          are filled in.
         </div>
       ) : null}
 
@@ -92,13 +89,13 @@ export default async function JobDetailPage({
           <Section title="Responsibilities">{job.responsibilities ?? <Empty />}</Section>
           <Section title="Qualifications">{job.qualifications ?? <Empty />}</Section>
           {job.skills && job.skills.length > 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
               <h2 className="text-base font-semibold">Skills</h2>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {job.skills.map((s) => (
                   <li
                     key={s}
-                    className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+                    className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground"
                   >
                     {s}
                   </li>
@@ -109,7 +106,7 @@ export default async function JobDetailPage({
         </div>
 
         <aside className="space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-base font-semibold">Details</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <Row label="Status" value={<StatusPill status={job.status} />} />
@@ -152,22 +149,24 @@ export default async function JobDetailPage({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
       <h2 className="text-base font-semibold">{title}</h2>
-      <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{children}</div>
+      <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+        {children}
+      </div>
     </div>
   );
 }
 
 function Empty() {
-  return <span className="text-slate-400">Not provided</span>;
+  return <span className="text-muted-foreground">Not provided</span>;
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="font-medium text-slate-800">{value}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-medium text-foreground">{value}</dd>
     </div>
   );
 }

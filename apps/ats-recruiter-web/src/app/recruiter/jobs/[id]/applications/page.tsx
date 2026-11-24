@@ -41,7 +41,10 @@ export default async function JobApplicationsPage({
   if (!cfg.applicationServiceUrl || !cfg.jobServiceUrl) {
     return (
       <RecruiterShell title="Applicants">
-        <MissingConfig envName="NEXT_PUBLIC_APPLICATION_SERVICE_URL" example="http://localhost:8084" />
+        <MissingConfig
+          envName="NEXT_PUBLIC_APPLICATION_SERVICE_URL"
+          example="http://localhost:8084"
+        />
       </RecruiterShell>
     );
   }
@@ -76,13 +79,13 @@ export default async function JobApplicationsPage({
       title={`Applicants — ${job?.title ?? id}`}
       subtitle={`${apps.length} candidate${apps.length === 1 ? '' : 's'}`}
       actions={
-        <div className="flex gap-1 rounded-full border border-slate-200 bg-white p-1">
+        <div className="flex gap-1 rounded-full border border-border bg-card p-1">
           <Link
             href={`/recruiter/jobs/${id}/applications?view=kanban`}
             className={
               view === 'kanban'
-                ? 'rounded-full bg-slate-900 px-4 py-1 text-sm font-medium text-white'
-                : 'rounded-full px-4 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100'
+                ? 'rounded-full bg-primary px-4 py-1 text-sm font-medium text-primary-foreground'
+                : 'rounded-full px-4 py-1 text-sm font-medium text-foreground hover:bg-muted'
             }
           >
             Kanban
@@ -91,8 +94,8 @@ export default async function JobApplicationsPage({
             href={`/recruiter/jobs/${id}/applications?view=list`}
             className={
               view === 'list'
-                ? 'rounded-full bg-slate-900 px-4 py-1 text-sm font-medium text-white'
-                : 'rounded-full px-4 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100'
+                ? 'rounded-full bg-primary px-4 py-1 text-sm font-medium text-primary-foreground'
+                : 'rounded-full px-4 py-1 text-sm font-medium text-foreground hover:bg-muted'
             }
           >
             List
@@ -126,13 +129,13 @@ function KanbanBoard({ apps }: { apps: ApplicationDetail[] }) {
           <section
             key={stage}
             aria-label={stage}
-            className="flex h-fit max-h-[70vh] flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-100 p-3"
+            className="flex h-fit max-h-[70vh] flex-col gap-2 rounded-xl border border-border bg-muted p-3"
           >
             <header className="flex items-center justify-between">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {stage.replace('_', ' ').toLowerCase()}
               </h2>
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-700">
+              <span className="rounded-full bg-card px-2 py-0.5 text-xs font-medium text-foreground">
                 {stageApps.length}
               </span>
             </header>
@@ -141,15 +144,17 @@ function KanbanBoard({ apps }: { apps: ApplicationDetail[] }) {
                 <li key={a.id}>
                   <Link
                     href={`/recruiter/candidates/${a.candidateProfileId}?app=${a.id}`}
-                    className="block rounded-xl border border-slate-200 bg-white p-3 shadow-sm hover:shadow-md"
+                    className="block rounded-xl border border-border bg-card p-3 shadow-sm hover:shadow-md"
                   >
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-foreground">
                       {a.jobTitle ?? 'Application'}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Applied {new Date(a.appliedAt).toLocaleDateString()}
                     </p>
-                    <div className="mt-2"><StatusPill status={a.status} /></div>
+                    <div className="mt-2">
+                      <StatusPill status={a.status} />
+                    </div>
                   </Link>
                 </li>
               ))}
@@ -163,9 +168,9 @@ function KanbanBoard({ apps }: { apps: ApplicationDetail[] }) {
 
 function ApplicantsTable({ apps }: { apps: ApplicationDetail[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <table className="min-w-full divide-y divide-slate-200 text-sm">
-        <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+        <thead className="bg-background text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="px-4 py-3">Candidate</th>
             <th className="px-4 py-3">Source</th>
@@ -176,24 +181,26 @@ function ApplicantsTable({ apps }: { apps: ApplicationDetail[] }) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {apps.map((a) => (
-            <tr key={a.id} className="hover:bg-slate-50">
+            <tr key={a.id} className="hover:bg-muted">
               <td className="px-4 py-3">
                 <Link
                   href={`/recruiter/candidates/${a.candidateProfileId}?app=${a.id}`}
-                  className="font-medium text-slate-900 hover:underline"
+                  className="font-medium text-foreground hover:underline"
                 >
                   {a.candidateProfileId.slice(0, 8)}…
                 </Link>
               </td>
-              <td className="px-4 py-3 text-slate-700">{a.source ?? '—'}</td>
-              <td className="px-4 py-3 text-slate-700">
+              <td className="px-4 py-3 text-foreground">{a.source ?? '—'}</td>
+              <td className="px-4 py-3 text-foreground">
                 {new Date(a.appliedAt).toLocaleDateString()}
               </td>
-              <td className="px-4 py-3"><StatusPill status={a.status} /></td>
+              <td className="px-4 py-3">
+                <StatusPill status={a.status} />
+              </td>
               <td className="px-4 py-3 text-right">
                 <Link
                   href={`/recruiter/candidates/${a.candidateProfileId}?app=${a.id}`}
-                  className="text-sm font-medium text-slate-700 hover:underline"
+                  className="text-sm font-medium text-foreground hover:underline"
                 >
                   Review →
                 </Link>
