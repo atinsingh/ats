@@ -18,6 +18,8 @@ const NAV: NavItem[] = [
   { href: '/recruiter/clients', label: 'Clients', icon: 'building' },
   { href: '/recruiter/sourcing', label: 'Client sourcing', icon: 'target' },
   { href: '/recruiter/reports', label: 'Reports', icon: 'chart' },
+  { href: '/recruiter/agents', label: 'Agents', icon: 'bot' },
+  { href: '/recruiter/settings', label: 'Settings', icon: 'settings' },
 ];
 
 const KEYWORDS: Record<string, string[]> = {
@@ -31,6 +33,8 @@ const KEYWORDS: Record<string, string[]> = {
   '/recruiter/interviews': ['schedule', 'calendar', 'feedback', 'screening', 'invite'],
   '/recruiter/placements': ['contractors', 'assignments', 'extensions', 'redeploy', 'margin'],
   '/recruiter/reports': ['analytics', 'funnel', 'metrics', 'cost per start', 'export'],
+  '/recruiter/agents': ['automation', 'autonomy', 'runs', 'ai policy', 'pause'],
+  '/recruiter/settings': ['connections', 'integrations', 'out of office', 'mailbox', 'preferences'],
   '/recruiter/submittals': ['submissions', 'clients', 'follow-up', 'vms'],
 };
 
