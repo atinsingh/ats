@@ -7,6 +7,7 @@ import { AppShell, type CommandItem, type NavItem } from '@jobocate/ui';
 
 const NAV: NavItem[] = [
   { href: '/recruiter/review', label: 'Review queue', icon: 'review' },
+  { href: '/recruiter/inbox', label: 'Inbox', icon: 'inbox' },
   { href: '/recruiter/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { href: '/recruiter/jobs', label: 'Jobs', icon: 'briefcase' },
   { href: '/recruiter/pipeline', label: 'Pipeline', icon: 'columns' },
@@ -23,6 +24,7 @@ const KEYWORDS: Record<string, string[]> = {
   '/recruiter/pipeline': ['applicants', 'candidates', 'stages'],
   '/recruiter/clients': ['companies', 'accounts', 'customers', 'msa', 'territory'],
   '/recruiter/sourcing': ['prospects', 'leads', 'business development', 'pitch', 'intro'],
+  '/recruiter/inbox': ['messages', 'email', 'sms', 'replies', 'conversations'],
   '/recruiter/submittals': ['submissions', 'clients', 'follow-up', 'vms'],
 };
 
