@@ -1,62 +1,46 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-
-const NAV = [
-  { href: '/recruiter/dashboard', label: 'Dashboard' },
-  { href: '/recruiter/jobs', label: 'Jobs' },
-  { href: '/recruiter/pipeline', label: 'Pipeline' },
-];
+import { RecruiterAppShell } from './RecruiterAppShell';
 
 export function RecruiterShell({
   title,
   subtitle,
   actions,
+  hideNewJob = false,
   children,
 }: {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  /** Hide the New job button, e.g. on the New job page itself. */
+  hideNewJob?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-dvh bg-background text-foreground">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-3 sm:px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">Jobocate</span>
-            <span className="text-base">ATS</span>
-          </Link>
-          <nav className="hidden gap-1 text-sm font-medium md:flex" aria-label="Recruiter">
-            {NAV.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className="rounded-md px-3 py-2 text-foreground hover:bg-muted"
-              >
-                {n.label}
-              </Link>
-            ))}
-          </nav>
-          <Link
-            href="/recruiter/jobs/new"
-            className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
-          >
-            + New job
-          </Link>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <RecruiterAppShell>
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold sm:text-3xl">{title}</h1>
+            <h1 className="font-display text-[28px] leading-9 tracking-tight sm:text-[32px] sm:leading-10">
+              {title}
+            </h1>
             {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
           </div>
-          {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+          <div className="flex flex-wrap gap-2">
+            {actions}
+            {hideNewJob ? null : (
+              <Link
+                href="/recruiter/jobs/new"
+                className="inline-flex h-control items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-fast hover:bg-primary-hover"
+              >
+                New job
+              </Link>
+            )}
+          </div>
         </div>
         <div className="mt-6">{children}</div>
       </main>
-    </div>
+    </RecruiterAppShell>
   );
 }
 

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default function NewJobPage() {
   const cfg = readRecruiterConfig();
   return (
-    <RecruiterShell title="New job" subtitle="Save as draft, then publish when ready.">
+    <RecruiterShell hideNewJob title="New job" subtitle="Save as draft, then publish when ready.">
       {cfg.jobServiceUrl ? (
         <NewJobForm apiBase={cfg.jobServiceUrl} tenantId={cfg.tenantId} />
       ) : (
