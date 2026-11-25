@@ -23,6 +23,8 @@ export const primitives = {
   'zinc-800': '#27272a',
   'zinc-900': '#18181b',
   'zinc-950': '#09090b',
+  /** Insyght navy, from insyght.ai (theme-color). Placeholder until the official palette lands. */
+  'navy-950': '#070b1e',
   'indigo-50': '#eef2ff',
   'indigo-200': '#c7d2fe',
   'indigo-300': '#a5b4fc',
@@ -83,6 +85,8 @@ export const semanticNames = [
   'danger-soft',
   'info',
   'info-soft',
+  'brand',
+  'brand-foreground',
 ] as const;
 
 export type SemanticName = (typeof semanticNames)[number];
@@ -122,6 +126,8 @@ export const light: Theme = {
   'danger-soft': 'red-50',
   info: 'sky-700',
   'info-soft': 'sky-50',
+  brand: 'navy-950',
+  'brand-foreground': 'zinc-50',
 };
 
 export const dark: Theme = {
@@ -158,6 +164,8 @@ export const dark: Theme = {
   'danger-soft': 'red-925',
   info: 'sky-400',
   'info-soft': 'sky-925',
+  brand: 'zinc-50',
+  'brand-foreground': 'navy-950',
 };
 
 /** Text pairs that must reach 4.5:1: [text, surface]. */
@@ -186,6 +194,7 @@ export const textPairs: ReadonlyArray<readonly [SemanticName, SemanticName]> = [
   ['danger', 'danger-soft'],
   ['info', 'card'],
   ['info', 'info-soft'],
+  ['brand-foreground', 'brand'],
 ];
 
 /** Non-text pairs (control edges, focus ring) that must reach 3:1. */

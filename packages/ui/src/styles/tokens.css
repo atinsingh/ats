@@ -33,6 +33,8 @@
   --danger-soft: 254 242 242;
   --info: 3 105 161;
   --info-soft: 240 249 255;
+  --brand: 7 11 30;
+  --brand-foreground: 247 247 248;
   --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.05), 0 0 0 1px rgba(24, 24, 27, 0.05);
   --shadow-raised: 0 1px 2px rgba(24, 24, 27, 0.04), 0 8px 24px -8px rgba(24, 24, 27, 0.14), 0 0 0 1px rgba(24, 24, 27, 0.05);
   color-scheme: light;
@@ -71,6 +73,8 @@
   --danger-soft: 55 36 39;
   --info: 56 189 248;
   --info-soft: 28 47 58;
+  --brand: 247 247 248;
+  --brand-foreground: 7 11 30;
   --shadow-card: 0 0 0 1px #27272a;
   --shadow-raised: 0 0 0 1px #27272a, 0 16px 40px -16px rgba(0, 0, 0, 0.56);
   color-scheme: dark;
