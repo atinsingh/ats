@@ -10,9 +10,11 @@ const NAV: NavItem[] = [
   { href: '/recruiter/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { href: '/recruiter/jobs', label: 'Jobs', icon: 'briefcase' },
   { href: '/recruiter/pipeline', label: 'Pipeline', icon: 'columns' },
+  { href: '/recruiter/candidates', label: 'Candidates', icon: 'users' },
 ];
 
 const KEYWORDS: Record<string, string[]> = {
+  '/recruiter/candidates': ['people', 'talent', 'resumes', 'profiles'],
   '/recruiter/review': ['approvals', 'approve', 'proposals', 'agents'],
   '/recruiter/jobs': ['requisitions', 'roles', 'openings'],
   '/recruiter/pipeline': ['applicants', 'candidates', 'stages'],
