@@ -12,6 +12,7 @@ const NAV: NavItem[] = [
   { href: '/recruiter/pipeline', label: 'Pipeline', icon: 'columns' },
   { href: '/recruiter/candidates', label: 'Candidates', icon: 'users' },
   { href: '/recruiter/submittals', label: 'Submittals', icon: 'send' },
+  { href: '/recruiter/clients', label: 'Clients', icon: 'building' },
 ];
 
 const KEYWORDS: Record<string, string[]> = {
@@ -19,6 +20,7 @@ const KEYWORDS: Record<string, string[]> = {
   '/recruiter/review': ['approvals', 'approve', 'proposals', 'agents'],
   '/recruiter/jobs': ['requisitions', 'roles', 'openings'],
   '/recruiter/pipeline': ['applicants', 'candidates', 'stages'],
+  '/recruiter/clients': ['companies', 'accounts', 'customers', 'msa', 'territory'],
   '/recruiter/submittals': ['submissions', 'clients', 'follow-up', 'vms'],
 };
 
