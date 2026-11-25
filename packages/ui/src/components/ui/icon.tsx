@@ -72,6 +72,13 @@ const paths = {
       <path d="M10 18h4" />
     </>
   ),
+  target: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </>
+  ),
   check: <path d="M20 6 9 17l-5-5" />,
   alert: (
     <>

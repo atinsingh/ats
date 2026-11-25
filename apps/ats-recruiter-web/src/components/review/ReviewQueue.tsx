@@ -346,7 +346,7 @@ function Kbd({ children }: { children: string }) {
   );
 }
 
-function CheckRow({ check }: { check: Check }) {
+export function CheckRow({ check }: { check: Check }) {
   const tone = { pass: 'text-success', warn: 'text-warning', fail: 'text-danger' }[check.status];
   const icon = check.status === 'pass' ? 'check' : check.status === 'warn' ? 'alert' : 'x';
   return (
