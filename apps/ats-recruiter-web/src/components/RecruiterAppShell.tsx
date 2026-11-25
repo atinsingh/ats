@@ -6,12 +6,14 @@ import type { ReactNode } from 'react';
 import { AppShell, type CommandItem, type NavItem } from '@jobocate/ui';
 
 const NAV: NavItem[] = [
+  { href: '/recruiter/review', label: 'Review queue', icon: 'review' },
   { href: '/recruiter/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { href: '/recruiter/jobs', label: 'Jobs', icon: 'briefcase' },
   { href: '/recruiter/pipeline', label: 'Pipeline', icon: 'columns' },
 ];
 
 const KEYWORDS: Record<string, string[]> = {
+  '/recruiter/review': ['approvals', 'approve', 'proposals', 'agents'],
   '/recruiter/jobs': ['requisitions', 'roles', 'openings'],
   '/recruiter/pipeline': ['applicants', 'candidates', 'stages'],
 };
