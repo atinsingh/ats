@@ -14,6 +14,7 @@ const NAV: NavItem[] = [
   { href: '/recruiter/candidates', label: 'Candidates', icon: 'users' },
   { href: '/recruiter/submittals', label: 'Submittals', icon: 'send' },
   { href: '/recruiter/interviews', label: 'Interviews', icon: 'calendar' },
+  { href: '/recruiter/placements', label: 'Placements', icon: 'handshake' },
   { href: '/recruiter/clients', label: 'Clients', icon: 'building' },
   { href: '/recruiter/sourcing', label: 'Client sourcing', icon: 'target' },
 ];
@@ -27,6 +28,7 @@ const KEYWORDS: Record<string, string[]> = {
   '/recruiter/sourcing': ['prospects', 'leads', 'business development', 'pitch', 'intro'],
   '/recruiter/inbox': ['messages', 'email', 'sms', 'replies', 'conversations'],
   '/recruiter/interviews': ['schedule', 'calendar', 'feedback', 'screening', 'invite'],
+  '/recruiter/placements': ['contractors', 'assignments', 'extensions', 'redeploy', 'margin'],
   '/recruiter/submittals': ['submissions', 'clients', 'follow-up', 'vms'],
 };
 
