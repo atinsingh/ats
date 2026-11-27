@@ -5,12 +5,14 @@ import { Button, Icon, cn } from '@jobocate/ui';
 
 import {
   OVERRIDE_MIN_CHARS,
+  canEdit,
   decide,
   emptyQueue,
   filterByKind,
   isBlocked,
   moveSelection,
   pendingCount,
+  removeDecision,
   sortByDeadline,
   undo,
   type Check,
@@ -19,6 +21,7 @@ import {
   type Proposal,
   type ProposalKind,
 } from '../../lib/review/queue';
+import { DeferredSends, UNDO_WINDOW_MS } from '../../lib/review/artifacts';
 
 const FILTERS: { value: ProposalKind | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -26,6 +29,7 @@ const FILTERS: { value: ProposalKind | 'all'; label: string }[] = [
   { value: 'message', label: 'Messages' },
   { value: 'job-post', label: 'Job posts' },
   { value: 'timesheet', label: 'Timesheets' },
+  { value: 'ai-draft', label: 'AI drafts' },
 ];
 
 const OUTCOME_LABEL: Record<Decision['outcome'], string> = {
@@ -38,9 +42,12 @@ const OUTCOME_LABEL: Record<Decision['outcome'], string> = {
 export function ReviewQueue({
   proposals,
   representative,
+  send,
 }: {
   proposals: Proposal[];
   representative: boolean;
+  /** Sends a decision to the service. Called only after the undo window closes. */
+  send?: (p: Proposal, d: Decision) => Promise<void>;
 }) {
   const sorted = useMemo(() => sortByDeadline(proposals), [proposals]);
   const [filter, setFilter] = useState<ProposalKind | 'all'>('all');
@@ -50,6 +57,12 @@ export function ReviewQueue({
   const [editing, setEditing] = useState<string | null>(null);
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [announce, setAnnounce] = useState('');
+  /** Decisions already handed to the service; Undo can no longer take these back. */
+  const [committed, setCommitted] = useState<ReadonlySet<string>>(() => new Set());
+  const sendsRef = useRef<DeferredSends | null>(null);
+  if (send && !sendsRef.current) sendsRef.current = new DeferredSends();
+
+  useEffect(() => () => sendsRef.current?.flush(), []);
 
   const selected = visible.find((p) => p.id === selectedId) ?? visible[0] ?? null;
   const decision = selected ? queue.decisions[selected.id] : undefined;
@@ -61,23 +74,47 @@ export function ReviewQueue({
         const next = decide(queue, p, input);
         setQueue(next);
         setEditing(null);
-        setAnnounce(`${OUTCOME_LABEL[input.outcome]}: ${p.title}. Press Z to undo.`);
+        const sends = sendsRef.current;
+        if (send && sends) {
+          const d = next.decisions[p.id]!;
+          sends.schedule(p.id, () => {
+            setCommitted((c) => new Set(c).add(p.id));
+            send(p, d).catch(() => {
+              setCommitted((c) => {
+                const n = new Set(c);
+                n.delete(p.id);
+                return n;
+              });
+              setQueue((q) => removeDecision(q, p.id));
+              setAnnounce(`Could not send the decision on ${p.title}. It is back in the queue.`);
+            });
+          });
+          setAnnounce(
+            `${OUTCOME_LABEL[input.outcome]}: ${p.title}. Sending in ${UNDO_WINDOW_MS / 1000} seconds. Press Z to undo.`,
+          );
+        } else {
+          setAnnounce(`${OUTCOME_LABEL[input.outcome]}: ${p.title}. Press Z to undo.`);
+        }
         const nextPending = visible.find((v) => v.id !== p.id && !next.decisions[v.id]);
         if (nextPending) setSelectedId(nextPending.id);
       } catch (e) {
         setAnnounce(e instanceof Error ? e.message : 'That decision is not allowed');
       }
     },
-    [queue, visible],
+    [queue, visible, send],
   );
 
   const undoLast = useCallback(() => {
     const last = queue.history[queue.history.length - 1];
     if (!last) return;
+    if (send && !sendsRef.current?.cancel(last)) {
+      setAnnounce('That decision was already sent, so it cannot be undone here.');
+      return;
+    }
     setQueue(undo(queue));
     setSelectedId(last);
     setAnnounce('Undone. The proposal is back in the queue.');
-  }, [queue]);
+  }, [queue, send]);
 
   const actionsRef = useRef({ apply, undoLast, selected, decision });
   actionsRef.current = { apply, undoLast, selected, decision };
@@ -104,7 +141,7 @@ export function ReviewQueue({
         else act(sel, { outcome: 'approved' });
       } else if (sel && !dec && key === 'r') {
         act(sel, { outcome: 'rejected' });
-      } else if (sel && !dec && key === 'e' && sel.draft !== undefined && !isBlocked(sel)) {
+      } else if (sel && !dec && key === 'e' && canEdit(sel)) {
         setEditing(sel.id);
       } else {
         return;
@@ -121,6 +158,12 @@ export function ReviewQueue({
         <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
           Representative data. The approvals service is not connected yet, so these proposals are
           samples and your decisions stay in this browser tab. Nothing is sent.
+        </p>
+      ) : send ? (
+        <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
+          These are real AI drafts waiting for review. Each decision is saved{' '}
+          {UNDO_WINDOW_MS / 1000} seconds after you make it, so you can still undo it. Approving
+          only marks a draft approved. Nothing is sent to a candidate from here.
         </p>
       ) : null}
 
@@ -254,9 +297,13 @@ export function ReviewQueue({
                     {OUTCOME_LABEL[decision.outcome]}
                     {decision.reason ? `. Reason: “${decision.reason}”` : ''}
                   </span>
-                  <Button variant="outline" size="sm" onClick={undoLast}>
-                    Undo
-                  </Button>
+                  {committed.has(selected.id) ? (
+                    <span className="text-caption text-muted-foreground">Saved</span>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={undoLast}>
+                      Undo
+                    </Button>
+                  )}
                 </div>
               ) : editing === selected.id ? null : (
                 <div className="flex flex-wrap gap-2">
@@ -267,7 +314,7 @@ export function ReviewQueue({
                       {selected.approveLabel}
                     </Button>
                   )}
-                  {selected.draft !== undefined && !isBlocked(selected) ? (
+                  {canEdit(selected) ? (
                     <Button variant="outline" onClick={() => setEditing(selected.id)}>
                       Edit draft
                     </Button>

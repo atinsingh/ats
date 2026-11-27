@@ -40,6 +40,12 @@ public class SecurityConfig {
                                         Role.SUPER_ADMIN.name())
                                 .requestMatchers("/api/v1/applications/**")
                                 .authenticated()
+                                .requestMatchers("/api/v1/ai-artifacts/review-queue")
+                                .hasAnyRole(
+                                        Role.RECRUITER.name(),
+                                        Role.HIRING_MANAGER.name(),
+                                        Role.TENANT_ADMIN.name(),
+                                        Role.SUPER_ADMIN.name())
                                 .requestMatchers("/api/v1/ai-artifacts/**")
                                 .authenticated()
                                 .anyRequest()

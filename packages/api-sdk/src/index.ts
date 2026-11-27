@@ -5,6 +5,8 @@ export type JobocateClientOptions = {
   getTenantId?: () => string | undefined | Promise<string | undefined>;
   /** When set, sends `X-Jobocate-Candidate-Id` (local dev shim until JWT-derived identity lands). */
   getCandidateId?: () => string | undefined | Promise<string | undefined>;
+  /** When set, sends `X-Jobocate-User-Id` so the service records who acted (local dev shim). */
+  getUserId?: () => string | undefined | Promise<string | undefined>;
 };
 
 export type SearchGatewayClientOptions = {
@@ -351,6 +353,10 @@ export function createJobocateClient(options: JobocateClientOptions) {
     if (candidateId) {
       headers.set('X-Jobocate-Candidate-Id', candidateId);
     }
+    const userId = await options.getUserId?.();
+    if (userId) {
+      headers.set('X-Jobocate-User-Id', userId);
+    }
 
     const res = await fetch(`${baseUrl}${path}`, { ...init, headers });
     const text = await res.text();
@@ -521,6 +527,9 @@ export function createJobocateClient(options: JobocateClientOptions) {
         });
         return request<AiArtifact[]>(`/api/v1/ai-artifacts?${qs.toString()}`);
       },
+      /** Drafts waiting for a person to review, oldest first. Recruiter roles only. */
+      reviewQueue: (limit = 50) =>
+        request<AiArtifact[]>(`/api/v1/ai-artifacts/review-queue?limit=${encodeURIComponent(limit)}`),
       approve: (id: string) =>
         request<AiArtifact>(`/api/v1/ai-artifacts/${encodeURIComponent(id)}/approve`, {
           method: 'POST',

@@ -4,7 +4,7 @@
  * rules are unit-tested (test/review-queue.test.ts) and the UI stays thin.
  */
 
-export type ProposalKind = 'submittal' | 'message' | 'job-post' | 'timesheet';
+export type ProposalKind = 'submittal' | 'message' | 'job-post' | 'timesheet' | 'ai-draft';
 export type CheckStatus = 'pass' | 'warn' | 'fail';
 
 export interface Check {
@@ -39,6 +39,8 @@ export interface Proposal {
   approveLabel: string;
   checks: Check[];
   evidence: Evidence[];
+  /** False when the service cannot store an edited draft, so only approve or reject. */
+  editable?: boolean;
 }
 
 export type Outcome = 'approved' | 'edited' | 'rejected' | 'overridden';
@@ -61,6 +63,10 @@ export const OVERRIDE_MIN_CHARS = 10;
 export const emptyQueue = (): QueueState => ({ decisions: {}, history: [] });
 
 export const isBlocked = (p: Proposal): boolean => p.checks.some((c) => c.status === 'fail');
+
+/** A draft can be edited when it exists, the service can store the edit, and nothing blocks it. */
+export const canEdit = (p: Proposal): boolean =>
+  p.draft !== undefined && p.editable !== false && !isBlocked(p);
 
 export function sortByDeadline<P extends Proposal>(proposals: readonly P[]): P[] {
   return proposals
@@ -103,6 +109,7 @@ export function decide(
       break;
     case 'edited': {
       if (p.draft === undefined) throw new Error(`${p.id} has no draft to edit`);
+      if (p.editable === false) throw new Error(`${p.id} cannot be edited here`);
       if (blocked) throw new Error(`${p.id} is blocked by a failed check; override with a reason`);
       const draft = input.draft.trim();
       if (!draft) throw new Error('The edited draft is empty');
@@ -131,6 +138,14 @@ export function undo(q: QueueState): QueueState {
   const decisions = { ...q.decisions };
   delete decisions[last];
   return { decisions, history: q.history.slice(0, -1) };
+}
+
+/** Drop one decision, e.g. when sending it failed. */
+export function removeDecision(q: QueueState, id: string): QueueState {
+  if (!q.decisions[id]) return q;
+  const decisions = { ...q.decisions };
+  delete decisions[id];
+  return { decisions, history: q.history.filter((h) => h !== id) };
 }
 
 /** Move the selection by `step` within `ids`, wrapping. Unknown ids select the first. */

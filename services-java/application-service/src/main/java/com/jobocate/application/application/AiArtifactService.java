@@ -284,6 +284,15 @@ public class AiArtifactService {
                 PageRequest.of(0, Math.min(Math.max(limit, 1), 200)));
     }
 
+    /** Drafts waiting for a person to review, oldest first. */
+    @Transactional(readOnly = true)
+    public List<AiArtifactEntity> listReviewQueue(int limit) {
+        return artifacts.findByTenantIdAndStatusOrderByCreatedAtAsc(
+                TenantContext.requireTenant(),
+                AiArtifactStatus.READY_FOR_REVIEW,
+                PageRequest.of(0, Math.min(Math.max(limit, 1), 200)));
+    }
+
     private AiArtifactEntity loadOrThrow(UUID tenant, UUID id) {
         return artifacts
                 .findByTenantIdAndId(tenant, id)
