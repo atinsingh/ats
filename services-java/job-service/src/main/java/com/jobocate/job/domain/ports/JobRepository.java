@@ -14,5 +14,6 @@ public interface JobRepository {
 
     Optional<Job> findByTenantAndSlug(UUID tenantId, String slug);
 
+    /** Newest first. A null status means every status. */
     List<Job> searchByTenant(UUID tenantId, JobStatus status, int limit, int offset);
 }

@@ -362,7 +362,7 @@ export function createJobocateClient(options: JobocateClientOptions) {
 
   return {
     jobs: {
-      listOpen: () => request<Job[]>(`/api/v1/jobs`),
+      listOpen: () => request<Job[]>(`/api/v1/jobs?status=PUBLISHED`),
       get: (id: string) => request<Job>(`/api/v1/jobs/${encodeURIComponent(id)}`),
       listForRecruiter: (params?: { status?: Job['status']; limit?: number; offset?: number }) => {
         const qs = new URLSearchParams();

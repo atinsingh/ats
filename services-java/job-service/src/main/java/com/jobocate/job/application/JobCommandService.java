@@ -31,8 +31,13 @@ public class JobCommandService {
 
     @Transactional(readOnly = true)
     public List<Job> listPublishedJobs(int limit, int offset) {
-        return jobs.searchByTenant(
-                TenantContext.requireTenant(), JobStatus.PUBLISHED, limit, offset);
+        return listJobs(JobStatus.PUBLISHED, limit, offset);
+    }
+
+    /** The tenant's jobs, newest first. A null status means every status. */
+    @Transactional(readOnly = true)
+    public List<Job> listJobs(JobStatus status, int limit, int offset) {
+        return jobs.searchByTenant(TenantContext.requireTenant(), status, limit, offset);
     }
 
     @Transactional(readOnly = true)
