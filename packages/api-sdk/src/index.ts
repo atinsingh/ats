@@ -82,6 +82,21 @@ export type CandidateProfile = {
 };
 
 /** Row returned by the tenant-scoped `GET /api/v1/candidates` list. */
+/** Recruiter-side candidate detail, as candidate-service returns it. */
+export type CandidateDetail = {
+  id: string;
+  email: string;
+  fullName: string;
+  headline?: string | null;
+  summary?: string | null;
+  locationCity?: string | null;
+  locationRegion?: string | null;
+  locationCountry?: string | null;
+  availability?: string | null;
+  visibility?: string | null;
+  consentSearchable: boolean;
+};
+
 export type CandidateSummary = {
   id: string;
   email: string;
@@ -380,34 +395,32 @@ export function createJobocateClient(options: JobocateClientOptions) {
       me: () => request<unknown>(`/api/v1/tenants/me`),
     },
     recruiterApplications: {
-      listForJob: (jobId: string) =>
-        request<ApplicationDetail[]>(
-          `/api/v1/jobs/${encodeURIComponent(jobId)}/applications`,
-        ),
+      /** Newest first. `limit` is capped at 500 by the service. */
+      listForJob: (jobId: string, opts: { status?: string; limit?: number } = {}) => {
+        const q = new URLSearchParams();
+        if (opts.status) q.set('status', opts.status);
+        if (opts.limit) q.set('limit', String(opts.limit));
+        const qs = q.toString();
+        return request<ApplicationDetail[]>(
+          `/api/v1/jobs/${encodeURIComponent(jobId)}/applications${qs ? `?${qs}` : ''}`,
+        );
+      },
       get: (id: string) =>
         request<ApplicationDetail>(`/api/v1/applications/${encodeURIComponent(id)}`),
-      transition: (
-        id: string,
-        body: { status: string; rejectionReason?: string },
-      ) =>
-        request<ApplicationDetail>(
-          `/api/v1/applications/${encodeURIComponent(id)}/status`,
-          { method: 'POST', body: JSON.stringify(body) },
-        ),
+      transition: (id: string, body: { to: string; rejectionReason?: string }) =>
+        request<ApplicationDetail>(`/api/v1/applications/${encodeURIComponent(id)}/status`, {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }),
       timeline: (id: string) =>
-        request<TimelineEntry[]>(
-          `/api/v1/applications/${encodeURIComponent(id)}/timeline`,
-        ),
+        request<TimelineEntry[]>(`/api/v1/applications/${encodeURIComponent(id)}/timeline`),
     },
     recruiterCandidates: {
       /** The caller's tenant candidates, newest first. Tenant comes from the auth header. */
       list: () => request<CandidateSummary[]>(`/api/v1/candidates`),
-      get: (id: string) =>
-        request<CandidateProfile>(`/api/v1/candidates/${encodeURIComponent(id)}`),
+      get: (id: string) => request<CandidateDetail>(`/api/v1/candidates/${encodeURIComponent(id)}`),
       resumes: (id: string) =>
-        request<Resume[]>(
-          `/api/v1/candidates/${encodeURIComponent(id)}/resumes`,
-        ),
+        request<Resume[]>(`/api/v1/candidates/${encodeURIComponent(id)}/resumes`),
     },
     candidate: {
       me: () => request<CandidateProfile>(`/api/v1/candidates/me`),
@@ -431,10 +444,10 @@ export function createJobocateClient(options: JobocateClientOptions) {
           }),
         }),
       finalize: (resumeId: string, body?: { versionLabel?: string; setDefault?: boolean }) =>
-        request<Resume>(
-          `/api/v1/me/resumes/${encodeURIComponent(resumeId)}/finalize`,
-          { method: 'POST', body: JSON.stringify(body ?? {}) },
-        ),
+        request<Resume>(`/api/v1/me/resumes/${encodeURIComponent(resumeId)}/finalize`, {
+          method: 'POST',
+          body: JSON.stringify(body ?? {}),
+        }),
       parsedFields: (resumeId: string) =>
         request<ResumeParsedFields>(
           `/api/v1/me/resumes/${encodeURIComponent(resumeId)}/parsed-fields`,
@@ -445,10 +458,9 @@ export function createJobocateClient(options: JobocateClientOptions) {
           { method: 'POST' },
         ),
       rejectParsedFields: (resumeId: string) =>
-        request<void>(
-          `/api/v1/me/resumes/${encodeURIComponent(resumeId)}/parsed-fields/reject`,
-          { method: 'POST' },
-        ),
+        request<void>(`/api/v1/me/resumes/${encodeURIComponent(resumeId)}/parsed-fields/reject`, {
+          method: 'POST',
+        }),
       downloadUrl: (resumeId: string) =>
         request<{ url: string; expiresAt: string }>(
           `/api/v1/me/resumes/${encodeURIComponent(resumeId)}/download-url`,
@@ -468,9 +480,7 @@ export function createJobocateClient(options: JobocateClientOptions) {
       }) =>
         request<ApplicationSummary>(`/api/v1/applications`, {
           method: 'POST',
-          headers: input.idempotencyKey
-            ? { 'Idempotency-Key': input.idempotencyKey }
-            : undefined,
+          headers: input.idempotencyKey ? { 'Idempotency-Key': input.idempotencyKey } : undefined,
           body: JSON.stringify({
             jobId: input.jobId,
             resumeIdUsed: input.resumeId,
@@ -495,13 +505,8 @@ export function createJobocateClient(options: JobocateClientOptions) {
           body: JSON.stringify(body),
         });
       },
-      get: (id: string) =>
-        request<AiArtifact>(`/api/v1/ai-artifacts/${encodeURIComponent(id)}`),
-      listForSubject: (
-        subjectType: AiArtifactSubjectType,
-        subjectId: string,
-        limit = 50,
-      ) => {
+      get: (id: string) => request<AiArtifact>(`/api/v1/ai-artifacts/${encodeURIComponent(id)}`),
+      listForSubject: (subjectType: AiArtifactSubjectType, subjectId: string, limit = 50) => {
         const qs = new URLSearchParams({
           subject_type: subjectType,
           subject_id: subjectId,
@@ -538,10 +543,9 @@ export function createJobocateClient(options: JobocateClientOptions) {
           body: JSON.stringify({ jobId }),
         }),
       remove: (savedId: string) =>
-        request<void>(
-          `/api/v1/candidates/me/saved-jobs/${encodeURIComponent(savedId)}`,
-          { method: 'DELETE' },
-        ),
+        request<void>(`/api/v1/candidates/me/saved-jobs/${encodeURIComponent(savedId)}`, {
+          method: 'DELETE',
+        }),
     },
   };
 }

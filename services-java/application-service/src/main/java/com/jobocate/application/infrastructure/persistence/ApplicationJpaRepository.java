@@ -3,6 +3,7 @@ package com.jobocate.application.infrastructure.persistence;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +13,12 @@ public interface ApplicationJpaRepository extends JpaRepository<ApplicationEntit
     List<ApplicationEntity> findByTenantIdOrderByCreatedAtDesc(UUID tenantId);
 
     Optional<ApplicationEntity> findByTenantIdAndId(UUID tenantId, UUID id);
+
+    List<ApplicationEntity> findByTenantIdAndJobIdOrderByCreatedAtDesc(
+            UUID tenantId, UUID jobId, Pageable page);
+
+    List<ApplicationEntity> findByTenantIdAndJobIdAndStatusOrderByCreatedAtDesc(
+            UUID tenantId, UUID jobId, ApplicationStatus status, Pageable page);
 
     Optional<ApplicationEntity> findByTenantIdAndSubmittedViaIdempotencyKey(
             UUID tenantId, String idempotencyKey);

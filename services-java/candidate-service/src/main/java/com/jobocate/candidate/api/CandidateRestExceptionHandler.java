@@ -24,6 +24,12 @@ public class CandidateRestExceptionHandler {
         return envelope(ex.getKind().http().value(), ex.getKind().code(), ex.getMessage(), null, req);
     }
 
+    @ExceptionHandler(CandidateNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handle(
+            CandidateNotFoundException ex, HttpServletRequest req) {
+        return envelope(404, "CANDIDATE_NOT_FOUND", ex.getMessage(), null, req);
+    }
+
     @ExceptionHandler(MissingTenantException.class)
     public ResponseEntity<Map<String, Object>> handle(MissingTenantException ex, HttpServletRequest req) {
         return envelope(401, "AUTH_TENANT_MISSING", ex.getMessage(), null, req);

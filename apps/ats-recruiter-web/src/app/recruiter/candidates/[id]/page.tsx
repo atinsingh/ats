@@ -3,7 +3,7 @@ import {
   JobocateHttpError,
   createJobocateClient,
   type ApplicationDetail,
-  type CandidateProfile,
+  type CandidateDetail,
   type TimelineEntry,
 } from '@jobocate/api-sdk';
 import {
@@ -50,7 +50,7 @@ export default async function CandidateDetailPage({
       })
     : null;
 
-  let candidate: CandidateProfile | null = null;
+  let candidate: CandidateDetail | null = null;
   let application: ApplicationDetail | null = null;
   let timeline: TimelineEntry[] = [];
   let error: string | null = null;
@@ -137,21 +137,6 @@ export default async function CandidateDetailPage({
             </Section>
           ) : null}
 
-          {candidate.skills && candidate.skills.length > 0 ? (
-            <Section title="Skills">
-              <ul className="flex flex-wrap gap-2">
-                {candidate.skills.map((s) => (
-                  <li
-                    key={s}
-                    className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground"
-                  >
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          ) : null}
-
           {timeline.length > 0 ? (
             <Section title="Timeline">
               <ol className="space-y-3 text-sm" role="list">
@@ -189,17 +174,11 @@ export default async function CandidateDetailPage({
               />
               <Row
                 label="Visibility"
-                value={candidate.visibility.replace('_', ' ').toLowerCase()}
+                value={candidate.visibility ? humanize(candidate.visibility) : '—'}
               />
-              <Row label="Availability" value={candidate.availability ?? '—'} />
               <Row
-                label="Salary expectation"
-                value={
-                  candidate.salaryExpectationMinCents != null &&
-                  candidate.salaryExpectationMaxCents != null
-                    ? `${(candidate.salaryExpectationMinCents / 100).toLocaleString()} – ${(candidate.salaryExpectationMaxCents / 100).toLocaleString()} ${candidate.currencyCode ?? ''}`
-                    : '—'
-                }
+                label="Availability"
+                value={candidate.availability ? humanize(candidate.availability) : '—'}
               />
               <Row label="Searchable" value={candidate.consentSearchable ? 'Yes' : 'No'} />
             </dl>
@@ -233,4 +212,9 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <dd className="font-medium text-foreground">{value}</dd>
     </div>
   );
+}
+
+/** TENANT_ONLY -> "tenant only". */
+function humanize(value: string) {
+  return value.replaceAll('_', ' ').toLowerCase();
 }

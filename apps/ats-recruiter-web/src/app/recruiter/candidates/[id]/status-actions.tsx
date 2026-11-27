@@ -4,18 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { JobocateHttpError, createJobocateClient } from '@jobocate/api-sdk';
 
-const ALLOWED_NEXT: Record<string, string[]> = {
-  APPLIED: ['SCREENING', 'SHORTLISTED', 'REJECTED'],
-  SCREENING: ['SHORTLISTED', 'INTERVIEW_SCHEDULED', 'REJECTED'],
-  SHORTLISTED: ['INTERVIEW_SCHEDULED', 'REJECTED'],
-  INTERVIEW_SCHEDULED: ['INTERVIEWED', 'REJECTED'],
-  INTERVIEWED: ['OFFERED', 'REJECTED'],
-  OFFERED: ['HIRED', 'REJECTED'],
-  HIRED: [],
-  REJECTED: [],
-  WITHDRAWN: [],
-  EXPIRED: [],
-};
+import { ALLOWED_NEXT } from '../../../../lib/candidates/transitions';
 
 export function ApplicationStatusActions({
   apiBase,
@@ -42,7 +31,7 @@ export function ApplicationStatusActions({
     setError(null);
     try {
       await client.recruiterApplications.transition(applicationId, {
-        status: next,
+        to: next,
         rejectionReason: next === 'REJECTED' ? reason : undefined,
       });
       router.refresh();
