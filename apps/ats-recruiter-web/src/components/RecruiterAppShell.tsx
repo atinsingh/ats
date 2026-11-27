@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { AppShell, type CommandItem, type NavItem } from '@jobocate/ui';
 
 const NAV: NavItem[] = [
+  { href: '/recruiter/today', label: 'Command center', icon: 'home' },
   { href: '/recruiter/review', label: 'Review queue', icon: 'review' },
   { href: '/recruiter/inbox', label: 'Inbox', icon: 'inbox' },
   { href: '/recruiter/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -23,6 +24,7 @@ const NAV: NavItem[] = [
 ];
 
 const KEYWORDS: Record<string, string[]> = {
+  '/recruiter/today': ['home', 'today', 'priorities', 'overview', 'start'],
   '/recruiter/candidates': ['people', 'talent', 'resumes', 'profiles'],
   '/recruiter/review': ['approvals', 'approve', 'proposals', 'agents'],
   '/recruiter/jobs': ['requisitions', 'roles', 'openings'],
@@ -64,7 +66,7 @@ export function RecruiterAppShell({ children }: { children: ReactNode }) {
   return (
     <AppShell
       product="Recruiter"
-      homeHref="/recruiter/dashboard"
+      homeHref="/recruiter/today"
       nav={NAV}
       currentPath={pathname}
       commands={COMMANDS}
