@@ -22,12 +22,14 @@ const NAV: NavItem[] = [
   { href: '/recruiter/sourcing', label: 'Client sourcing', icon: 'target' },
   { href: '/recruiter/reports', label: 'Reports', icon: 'chart' },
   { href: '/recruiter/agents', label: 'Agents', icon: 'bot' },
+  { href: '/recruiter/activity', label: 'Activity log', icon: 'history' },
   { href: '/recruiter/settings', label: 'Settings', icon: 'settings' },
 ];
 
 const KEYWORDS: Record<string, string[]> = {
   '/recruiter/talent': ['boolean', 'search string', 'x-ray', 'linkedin', 'sourcing', 'shortlist'],
   '/recruiter/sequences': ['follow-up', 'templates', 'drip', 'cadence', 'outreach', 'casl'],
+  '/recruiter/activity': ['audit', 'history', 'log', 'overrides', 'compliance', 'who did what'],
   '/recruiter/today': ['home', 'today', 'priorities', 'overview', 'start'],
   '/recruiter/candidates': ['people', 'talent', 'resumes', 'profiles'],
   '/recruiter/review': ['approvals', 'approve', 'proposals', 'agents'],
