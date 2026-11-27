@@ -12,6 +12,7 @@ const NAV: NavItem[] = [
   { href: '/recruiter/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { href: '/recruiter/jobs', label: 'Jobs', icon: 'briefcase' },
   { href: '/recruiter/pipeline', label: 'Pipeline', icon: 'columns' },
+  { href: '/recruiter/talent', label: 'Talent search', icon: 'search' },
   { href: '/recruiter/candidates', label: 'Candidates', icon: 'users' },
   { href: '/recruiter/submittals', label: 'Submittals', icon: 'send' },
   { href: '/recruiter/interviews', label: 'Interviews', icon: 'calendar' },
@@ -24,6 +25,7 @@ const NAV: NavItem[] = [
 ];
 
 const KEYWORDS: Record<string, string[]> = {
+  '/recruiter/talent': ['boolean', 'search string', 'x-ray', 'linkedin', 'sourcing', 'shortlist'],
   '/recruiter/today': ['home', 'today', 'priorities', 'overview', 'start'],
   '/recruiter/candidates': ['people', 'talent', 'resumes', 'profiles'],
   '/recruiter/review': ['approvals', 'approve', 'proposals', 'agents'],
