@@ -93,7 +93,7 @@ public class S3ResumeStorage implements ResumeStorage {
                                 .putObjectRequest(put)
                                 .build());
 
-        return new UploadTarget(signed.url().toURI(), objectKey, signed.expiration());
+        return new UploadTarget(toUri(signed.url()), objectKey, signed.expiration());
     }
 
     @Override
@@ -106,7 +106,16 @@ public class S3ResumeStorage implements ResumeStorage {
                                 .signatureDuration(effectiveTtl)
                                 .getObjectRequest(get)
                                 .build());
-        return new SignedDownload(signed.url().toURI(), signed.expiration());
+        return new SignedDownload(toUri(signed.url()), signed.expiration());
+    }
+
+    /** A presigned URL from the AWS SDK is always a valid URI; anything else is a bug. */
+    private static java.net.URI toUri(java.net.URL url) {
+        try {
+            return url.toURI();
+        } catch (java.net.URISyntaxException e) {
+            throw new IllegalStateException("Presigned URL is not a valid URI", e);
+        }
     }
 
     @Override

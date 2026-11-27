@@ -71,6 +71,8 @@ public class CandidateProfileEntity extends AuditableEntity {
     @Column(name = "salary_expectation_max_cents")
     private Long salaryExpectationMaxCents;
 
+    // The column is CHAR(3) in the migrations; map it as CHAR or schema validation fails.
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "currency_code", length = 3)
     private String currencyCode;
 
@@ -143,6 +145,38 @@ public class CandidateProfileEntity extends AuditableEntity {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getLocationCity() {
+        return locationCity;
+    }
+
+    public void setLocationCity(String locationCity) {
+        this.locationCity = locationCity;
+    }
+
+    public String getLocationRegion() {
+        return locationRegion;
+    }
+
+    public void setLocationRegion(String locationRegion) {
+        this.locationRegion = locationRegion;
+    }
+
+    public String getLocationCountry() {
+        return locationCountry;
+    }
+
+    public void setLocationCountry(String locationCountry) {
+        this.locationCountry = locationCountry;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public void setSummary(String summary) {
+        this.summary = summary;
     }
 
     public ProfileVisibility getProfileVisibility() {

@@ -16,6 +16,8 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Access(AccessType.FIELD)
@@ -82,6 +84,8 @@ class JobEntity extends AuditableEntity {
     @Column(name = "salary_max_cents")
     private Long salaryMaxCents;
 
+    // The column is CHAR(3) in the migrations; map it as CHAR or schema validation fails.
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "currency_code", length = 3)
     private String currencyCode;
 
