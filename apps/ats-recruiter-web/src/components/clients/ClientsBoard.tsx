@@ -41,11 +41,14 @@ export function ClientsBoard({
   clients,
   now,
   representative,
+  revenueNote,
 }: {
   clients: Client[];
   /** ISO time the page was rendered, so server and client agree on ages. */
   now: string;
   representative: boolean;
+  /** How revenue was worked out, when it is an estimate. */
+  revenueNote?: string;
 }) {
   const at = useMemo(() => new Date(now), [now]);
   const [query, setQuery] = useState('');
@@ -76,7 +79,7 @@ export function ClientsBoard({
         <Stat
           label="Revenue, last 12 months"
           value={formatMoney(totals.revenue12m)}
-          note={totals.revenue12m === null ? 'Starts with placements' : undefined}
+          note={totals.revenue12m === null ? 'Starts with placements' : revenueNote}
         />
         <Stat
           label="Need attention"
@@ -181,7 +184,7 @@ export function ClientsBoard({
                   Open jobs
                 </th>
                 <th scope="col" className="px-3 py-3 text-right font-semibold">
-                  Revenue, 12 months
+                  {revenueNote ? 'Est. revenue, 12 months' : 'Revenue, 12 months'}
                 </th>
                 <th scope="col" className="px-3 py-3 font-semibold">
                   Submits through

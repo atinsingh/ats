@@ -16,7 +16,7 @@ export interface Client {
   name: string;
   status: ClientStatus;
   openJobs: number;
-  /** Billed revenue over the last 12 months, in dollars. Unset until placements are tracked. */
+  /** Revenue over the last 12 months, in dollars, estimated from placements. Unset when unknown. */
   revenue12m?: number;
   /** How submittals reach them: a VMS name such as "Beeline", or "Direct". */
   channel: string;
