@@ -1,5 +1,8 @@
 package com.jobocate.candidate.api;
 
+import com.jobocate.candidate.application.TalentSearchService;
+import com.jobocate.candidate.application.TalentSearchService.Match;
+import com.jobocate.candidate.application.TalentSearchService.Query;
 import com.jobocate.candidate.infrastructure.persistence.CandidateJpaRepository;
 import com.jobocate.candidate.infrastructure.persistence.CandidateProfileEntity;
 import com.jobocate.platform.tenant.TenantContext;
@@ -7,6 +10,8 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,9 +20,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class CandidateController {
 
     private final CandidateJpaRepository candidates;
+    private final TalentSearchService search;
 
-    public CandidateController(CandidateJpaRepository candidates) {
+    public CandidateController(CandidateJpaRepository candidates, TalentSearchService search) {
         this.candidates = candidates;
+        this.search = search;
+    }
+
+    /**
+     * Your own database, ranked by a job's must-haves. Only people who agreed to be searchable are
+     * included. Read-only: nothing here contacts anyone.
+     */
+    @PostMapping("/search")
+    public List<Match> search(@RequestBody Query query) {
+        return search.search(query);
     }
 
     @GetMapping

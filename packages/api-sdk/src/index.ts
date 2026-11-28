@@ -106,6 +106,28 @@ export type CandidateSummary = {
   headline?: string | null;
 };
 
+/** A job's must-haves for searching your own database. */
+export type TalentQuery = {
+  titles: string[];
+  /** Every group is one must-have; any term in a group counts. */
+  skills: string[][];
+  exclude?: string[];
+  limit?: number;
+};
+
+/** One of your own candidates, ranked by must-haves found. Searchable people only. */
+export type TalentMatch = {
+  id: string;
+  fullName: string;
+  headline?: string | null;
+  locationCity?: string | null;
+  locationRegion?: string | null;
+  availability?: string | null;
+  found: number;
+  of: number;
+  updatedAt: string;
+};
+
 export type CandidateProfileInput = Partial<
   Pick<
     CandidateProfile,
@@ -576,6 +598,12 @@ export function createJobocateClient(options: JobocateClientOptions) {
       /** The caller's tenant candidates, newest first. Tenant comes from the auth header. */
       list: () => request<CandidateSummary[]>(`/api/v1/candidates`),
       get: (id: string) => request<CandidateDetail>(`/api/v1/candidates/${encodeURIComponent(id)}`),
+      /** Ranks your own searchable candidates; contacts nobody. */
+      search: (query: TalentQuery) =>
+        request<TalentMatch[]>(`/api/v1/candidates/search`, {
+          method: 'POST',
+          body: JSON.stringify(query),
+        }),
       resumes: (id: string) =>
         request<Resume[]>(`/api/v1/candidates/${encodeURIComponent(id)}/resumes`),
     },

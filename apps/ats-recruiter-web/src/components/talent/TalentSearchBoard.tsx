@@ -100,7 +100,12 @@ export function TalentSearchBoard({
           Representative data. Candidate search is not connected to this page yet, so these jobs and
           matches are samples and nothing here is saved.
         </p>
-      ) : null}
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Your open jobs and your own database. Matches only include people who agreed to be
+          searchable. Last contact and contact channels are not tracked yet.
+        </p>
+      )}
 
       <label className="flex max-w-md flex-col gap-1 text-sm">
         <span className="font-semibold">For job</span>
@@ -293,10 +298,10 @@ export function TalentSearchBoard({
                     </td>
                     <td className="px-3 py-2">{m.title}</td>
                     <td className="whitespace-nowrap px-3 py-2">
-                      {m.available ? formatDay(m.available) : 'Now'}
+                      {m.availableLabel ?? (m.available ? formatDay(m.available) : 'Now')}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2">
-                      {m.lastContact ? formatDay(m.lastContact) : 'Never'}
+                      {m.lastContact === null ? '–' : m.lastContact ? formatDay(m.lastContact) : 'Never'}
                     </td>
                     <td className={cn('px-3 py-2', !m.consent.length && 'text-muted-foreground')}>
                       {m.consent.length
@@ -318,6 +323,9 @@ export function TalentSearchBoard({
         <h2 id="saved-title" className="font-display text-[22px] leading-7">
           Saved searches
         </h2>
+        {saved.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No saved searches yet.</p>
+        ) : null}
         <ul className="divide-y divide-border">
           {saved.map((s) => (
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
