@@ -9,7 +9,8 @@ export type EventType =
   | 'data-access'
   | 'settings'
   | 'connection'
-  | 'draft';
+  | 'draft'
+  | 'pipeline';
 
 export const ACTOR_LABEL: Record<ActorKind, string> = {
   person: 'People',
@@ -18,10 +19,18 @@ export const ACTOR_LABEL: Record<ActorKind, string> = {
 };
 
 /** Filter groups shown on the page. Approvals and overrides are one group. */
-export type TypeFilter = 'all' | 'sends' | 'approvals' | 'data-access' | 'settings' | 'connections';
+export type TypeFilter =
+  | 'all'
+  | 'pipeline'
+  | 'sends'
+  | 'approvals'
+  | 'data-access'
+  | 'settings'
+  | 'connections';
 
 export const TYPE_FILTERS: { id: TypeFilter; label: string; types: EventType[] }[] = [
   { id: 'all', label: 'All events', types: [] },
+  { id: 'pipeline', label: 'Pipeline moves', types: ['pipeline'] },
   { id: 'sends', label: 'Sends', types: ['send'] },
   { id: 'approvals', label: 'Approvals and overrides', types: ['approval', 'override'] },
   { id: 'data-access', label: 'Data access', types: ['data-access'] },
@@ -37,6 +46,7 @@ export const TYPE_LABEL: Record<EventType, string> = {
   settings: 'Settings',
   connection: 'Connection',
   draft: 'Draft',
+  pipeline: 'Pipeline',
 };
 
 export interface ActivityEvent {

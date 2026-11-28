@@ -66,10 +66,17 @@ public class ApplicationController {
     public ApplicationResponse changeStatus(
             @PathVariable("id") UUID id,
             @Valid @RequestBody ChangeStatusRequest request,
+            @RequestHeader(value = "X-Jobocate-User-Id", required = false) UUID actorUserId,
             @RequestHeader(value = "X-Correlation-Id", required = false) UUID correlationId) {
+        // The acting person is recorded on the timeline, so the activity log can say who moved it.
         ApplicationEntity updated =
                 applications.transitionTo(
-                        id, request.to(), request.rejectionReason(), null, "RECRUITER", correlationId);
+                        id,
+                        request.to(),
+                        request.rejectionReason(),
+                        actorUserId,
+                        "RECRUITER",
+                        correlationId);
         return ApplicationResponse.from(updated);
     }
 

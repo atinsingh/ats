@@ -232,6 +232,25 @@ export type CreateSubmittalInput = {
 export type PlacementExtension = 'NONE' | 'ASKED' | 'AGREED' | 'DECLINED';
 
 /** A person hired a candidate for a client (application-service). Dates are YYYY-MM-DD. */
+/** One entry in the recruiter activity log, assembled from existing records. Newest first. */
+export type ActivityRecord = {
+  id: string;
+  at: string;
+  actorKind: 'PERSON' | 'AGENT' | 'SYSTEM';
+  actorUserId?: string | null;
+  /** A timeline entry type such as STATUS_CHANGE, or DRAFT_READY, DRAFT_FAILED, DRAFT_APPROVED,
+   * DRAFT_REJECTED or SUBMITTAL_APPROVED. */
+  code: string;
+  fromValue?: string | null;
+  toValue?: string | null;
+  /** The AI artifact kind, submittal channel, or timeline summary. */
+  detail?: string | null;
+  reason?: string | null;
+  applicationId?: string | null;
+  candidateProfileId?: string | null;
+  jobId?: string | null;
+};
+
 /** Desk report over the last `days` days. Counts only; no money is tracked yet. */
 export type DeskReport = {
   days: number;
@@ -693,6 +712,13 @@ export function createJobocateClient(options: JobocateClientOptions) {
           method: 'PATCH',
           body: JSON.stringify(input),
         }),
+    },
+    activity: {
+      /** Newest first, up to 500. Recruiter roles only. */
+      list: (limit?: number) =>
+        request<ActivityRecord[]>(
+          `/api/v1/activity${limit != null ? `?limit=${encodeURIComponent(String(limit))}` : ''}`,
+        ),
     },
     reports: {
       /** Funnel, sources and agent decisions. Recruiter roles only. */
