@@ -17,6 +17,9 @@ public interface SubmittalJpaRepository extends JpaRepository<SubmittalEntity, U
     List<SubmittalEntity> findByTenantIdAndStatusOrderByCreatedAtDesc(
             UUID tenantId, SubmittalStatus status, Pageable page);
 
+    Optional<SubmittalEntity> findFirstByTenantIdAndApplicationIdOrderByCreatedAtDesc(
+            UUID tenantId, UUID applicationId);
+
     boolean existsByTenantIdAndApplicationIdAndStatusIn(
             UUID tenantId, UUID applicationId, Collection<SubmittalStatus> statuses);
 }

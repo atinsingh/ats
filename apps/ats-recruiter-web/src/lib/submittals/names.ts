@@ -31,9 +31,12 @@ export function recruiterClient(cfg: RecruiterConfig, baseUrl: string) {
   });
 }
 
+/** Any row that names a candidate, a job and maybe a client: submittals and placements. */
+export type NamedRow = Pick<SubmittalRecord, 'candidateProfileId' | 'jobId' | 'clientId'>;
+
 export async function loadSubmittalNames(
   cfg: RecruiterConfig,
-  rows: readonly SubmittalRecord[],
+  rows: readonly NamedRow[],
 ): Promise<SubmittalNames> {
   const jobs = cfg.jobServiceUrl ? recruiterClient(cfg, cfg.jobServiceUrl) : null;
   const people = cfg.candidateServiceUrl ? recruiterClient(cfg, cfg.candidateServiceUrl) : null;

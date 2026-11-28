@@ -229,6 +229,35 @@ export type CreateSubmittalInput = {
   ownerUserId?: string;
 };
 
+export type PlacementExtension = 'NONE' | 'ASKED' | 'AGREED' | 'DECLINED';
+
+/** A person hired a candidate for a client (application-service). Dates are YYYY-MM-DD. */
+export type PlacementRecord = {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  candidateProfileId: string;
+  clientId?: string | null;
+  startDate: string;
+  endDate: string;
+  /** Dollars per hour. */
+  billRate: number;
+  payRate: number;
+  extension: PlacementExtension;
+  ownerUserId?: string | null;
+  createdAt: string;
+};
+
+export type CreatePlacementInput = {
+  applicationId: string;
+  clientId?: string;
+  startDate: string;
+  endDate: string;
+  billRate: number;
+  payRate: number;
+  ownerUserId?: string;
+};
+
 export type InterviewType = 'PHONE' | 'VIDEO' | 'ONSITE' | 'TECHNICAL' | 'PANEL';
 export type InterviewStatus = 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
@@ -650,6 +679,34 @@ export function createJobocateClient(options: JobocateClientOptions) {
         request<ClientRecord>(`/api/v1/clients`, { method: 'POST', body: JSON.stringify(input) }),
       update: (id: string, input: ClientInput) =>
         request<ClientRecord>(`/api/v1/clients/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify(input),
+        }),
+    },
+    placements: {
+      /** Newest start first. Recruiter roles only. */
+      list: (limit?: number) =>
+        request<PlacementRecord[]>(
+          `/api/v1/placements${limit != null ? `?limit=${encodeURIComponent(String(limit))}` : ''}`,
+        ),
+      get: (id: string) =>
+        request<PlacementRecord>(`/api/v1/placements/${encodeURIComponent(id)}`),
+      /** Only for an application a person has already moved to HIRED. */
+      create: (input: CreatePlacementInput) =>
+        request<PlacementRecord>(`/api/v1/placements`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      update: (
+        id: string,
+        input: {
+          endDate?: string;
+          billRate?: number;
+          payRate?: number;
+          extension?: PlacementExtension;
+        },
+      ) =>
+        request<PlacementRecord>(`/api/v1/placements/${encodeURIComponent(id)}`, {
           method: 'PATCH',
           body: JSON.stringify(input),
         }),
