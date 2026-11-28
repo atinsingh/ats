@@ -6,6 +6,8 @@ public final class JobErrorCodes {
     public static final String INVALID_STATE_TRANSITION = "INVALID_STATE_TRANSITION";
     public static final String OPTIMISTIC_LOCK_CONFLICT = "OPTIMISTIC_LOCK_CONFLICT";
     public static final String VALIDATION_FAILED = "VALIDATION_FAILED";
+    public static final String CLIENT_NOT_FOUND = "CLIENT_NOT_FOUND";
+    public static final String CLIENT_DUPLICATE = "CLIENT_DUPLICATE";
 
     private JobErrorCodes() {}
 }

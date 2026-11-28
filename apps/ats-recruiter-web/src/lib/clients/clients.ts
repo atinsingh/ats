@@ -16,8 +16,8 @@ export interface Client {
   name: string;
   status: ClientStatus;
   openJobs: number;
-  /** Billed revenue over the last 12 months, in dollars. */
-  revenue12m: number;
+  /** Billed revenue over the last 12 months, in dollars. Unset until placements are tracked. */
+  revenue12m?: number;
   /** How submittals reach them: a VMS name such as "Beeline", or "Direct". */
   channel: string;
   /** The desk that owns the client under territory rules. "You" for the viewer. */
@@ -83,7 +83,7 @@ export function sortClients(rows: readonly Client[], now: Date): Client[] {
   const flagged = (c: Client) => (attention(c, now) ? 0 : 1);
   return [...rows].sort(
     (a, b) =>
-      flagged(a) - flagged(b) || b.revenue12m - a.revenue12m || a.name.localeCompare(b.name),
+      flagged(a) - flagged(b) || (b.revenue12m ?? 0) - (a.revenue12m ?? 0) || a.name.localeCompare(b.name),
   );
 }
 
@@ -91,7 +91,8 @@ export interface ClientTotals {
   clients: number;
   active: number;
   openJobs: number;
-  revenue12m: number;
+  /** Null when no client has a revenue figure yet. */
+  revenue12m: number | null;
   needsAttention: number;
 }
 
@@ -100,13 +101,19 @@ export function clientTotals(rows: readonly Client[], now: Date): ClientTotals {
     clients: rows.length,
     active: rows.filter((c) => c.status === 'active').length,
     openJobs: rows.reduce((n, c) => n + c.openJobs, 0),
-    revenue12m: rows.reduce((n, c) => n + c.revenue12m, 0),
+    revenue12m: rows.some((c) => c.revenue12m !== undefined)
+      ? rows.reduce((n, c) => n + (c.revenue12m ?? 0), 0)
+      : null,
     needsAttention: rows.filter((c) => attention(c, now)).length,
   };
 }
 
-/** $0, $880K, $1.42M. */
-export function formatMoney(n: number): string {
+/** Shown where revenue is not tracked yet. */
+export const NOT_TRACKED = 'Not tracked';
+
+/** $0, $880K, $1.42M, or "Not tracked" when there is no figure. */
+export function formatMoney(n: number | null | undefined): string {
+  if (n === null || n === undefined) return NOT_TRACKED;
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2).replace(/\.?0+$/, '')}M`;
   if (n >= 1_000) return `$${Math.round(n / 1_000)}K`;
   return `$${Math.round(n)}`;

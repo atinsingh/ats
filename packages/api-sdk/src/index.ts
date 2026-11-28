@@ -168,6 +168,32 @@ export type ResumeParsedFields = {
   reviewStatus: 'PENDING' | 'PROPOSED' | 'APPLIED' | 'REJECTED';
 };
 
+export type ClientStatus = 'ACTIVE' | 'DORMANT' | 'PROSPECT';
+
+/** A client company (job-service). Jobs point to it through organizationId. */
+export type ClientRecord = {
+  id: string;
+  name: string;
+  status: ClientStatus;
+  channel: string;
+  ownerUserId?: string | null;
+  lastContactAt?: string | null;
+  msaEndsOn?: string | null;
+  /** Published jobs whose organizationId is this client. */
+  openJobs: number;
+  createdAt: string;
+};
+
+export type ClientInput = {
+  name?: string;
+  status?: ClientStatus;
+  channel?: string;
+  ownerUserId?: string;
+  lastContactAt?: string;
+  /** ISO date, e.g. 2027-03-31. */
+  msaEndsOn?: string;
+};
+
 export type InterviewType = 'PHONE' | 'VIDEO' | 'ONSITE' | 'TECHNICAL' | 'PANEL';
 export type InterviewStatus = 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
@@ -573,6 +599,24 @@ export function createJobocateClient(options: JobocateClientOptions) {
       archive: (id: string) =>
         request<AiArtifact>(`/api/v1/ai-artifacts/${encodeURIComponent(id)}/archive`, {
           method: 'POST',
+        }),
+    },
+    clients: {
+      /** Clients by name, each with its count of open jobs. Recruiter roles only. */
+      list: (params?: { status?: ClientStatus; limit?: number }) => {
+        const qs = new URLSearchParams();
+        if (params?.status) qs.set('status', params.status);
+        if (params?.limit != null) qs.set('limit', String(params.limit));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return request<ClientRecord[]>(`/api/v1/clients${suffix}`);
+      },
+      get: (id: string) => request<ClientRecord>(`/api/v1/clients/${encodeURIComponent(id)}`),
+      create: (input: ClientInput & { name: string }) =>
+        request<ClientRecord>(`/api/v1/clients`, { method: 'POST', body: JSON.stringify(input) }),
+      update: (id: string, input: ClientInput) =>
+        request<ClientRecord>(`/api/v1/clients/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify(input),
         }),
     },
     interviews: {

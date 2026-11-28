@@ -65,7 +65,7 @@ export function ClientsBoard({
     <div className="flex flex-col gap-4">
       {representative ? (
         <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
-          Representative data. The client service is not connected yet, so these companies are
+          Representative data. The client service could not be reached, so these companies are
           samples. Nothing is sent from this page.
         </p>
       ) : null}
@@ -73,7 +73,11 @@ export function ClientsBoard({
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Clients" value={String(totals.clients)} note={`${totals.active} active`} />
         <Stat label="Open jobs" value={String(totals.openJobs)} />
-        <Stat label="Revenue, last 12 months" value={formatMoney(totals.revenue12m)} />
+        <Stat
+          label="Revenue, last 12 months"
+          value={formatMoney(totals.revenue12m)}
+          note={totals.revenue12m === null ? 'Starts with placements' : undefined}
+        />
         <Stat
           label="Need attention"
           value={String(totals.needsAttention)}
@@ -223,7 +227,12 @@ export function ClientsBoard({
                     >
                       {c.openJobs}
                     </td>
-                    <td className="px-3 py-3 text-right tabular-nums">
+                    <td
+                      className={cn(
+                        'px-3 py-3 text-right tabular-nums',
+                        c.revenue12m === undefined && 'text-muted-foreground',
+                      )}
+                    >
                       {formatMoney(c.revenue12m)}
                     </td>
                     <td className="px-3 py-3">{c.channel}</td>

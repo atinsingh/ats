@@ -16,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @RestControllerAdvice
 public class JobRestExceptionHandler {
@@ -67,6 +68,17 @@ public class JobRestExceptionHandler {
                 JobErrorCodes.VALIDATION_FAILED,
                 "Invalid value for " + ex.getName(),
                 List.of(Map.of("field", ex.getName(), "message", "Unsupported value")),
+                req);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handle(
+            HttpMessageNotReadableException ex, HttpServletRequest req) {
+        return envelope(
+                400,
+                JobErrorCodes.VALIDATION_FAILED,
+                "The request body could not be read",
+                null,
                 req);
     }
 
