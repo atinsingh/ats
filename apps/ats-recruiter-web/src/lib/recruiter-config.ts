@@ -7,6 +7,8 @@ export type RecruiterConfig = {
   jobServiceUrl: string | null;
   applicationServiceUrl: string | null;
   candidateServiceUrl: string | null;
+  /** tenant-auth-service, for colleague names. */
+  authServiceUrl: string | null;
   searchGatewayUrl: string | null;
   tenantId: string;
   recruiterUserId: string;
@@ -25,6 +27,9 @@ export function readRecruiterConfig(): RecruiterConfig {
     ),
     candidateServiceUrl: nullIfEmpty(
       process.env.NEXT_PUBLIC_CANDIDATE_SERVICE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL,
+    ),
+    authServiceUrl: nullIfEmpty(
+      process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL,
     ),
     searchGatewayUrl: nullIfEmpty(process.env.SEARCH_GATEWAY_URL),
     tenantId: process.env.RECRUITER_TENANT_ID ?? DEMO_TENANT,
