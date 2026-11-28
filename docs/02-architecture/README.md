@@ -6,11 +6,13 @@ System architecture, deployment topology, technology choices, and the **current 
 
 | File | Purpose | Status |
 |------|---------|--------|
-| [`audit-as-is.md`](./audit-as-is.md) | Snapshot of what is actually implemented today across `services-java`, `services-go`, `workers-python`, `apps`, `packages`, and `infra`. Update on every meaningful change. | Authoritative |
+| [`audit-as-is.md`](./audit-as-is.md) | Earlier snapshot of the implementation. | Stale — see next row |
+| [`as-is-verification-2026-11.md`](./as-is-verification-2026-11.md) | Code-verified state as of November 2026: capability status, defects, sequencing. | Authoritative |
+| [`job-board-hub-design.md`](./job-board-hub-design.md) | Design for job distribution and inbound applications (integration hub, connectors, apply ingestion). | Proposal |
 | [`backend-modular-architecture.md`](./backend-modular-architecture.md) | Spring Boot module map: responsibilities, package layout, dependency rules, security and tenancy boundaries. | Authoritative |
 | `system-architecture.md` | Macro view: clients → BFF → APIs → DB / Kafka / OpenSearch / S3, with deployment topology. | Planned |
 | `frontend-architecture.md` | Next.js App Router layout, BFF routes, server vs client components, data fetching strategy. | Planned |
-| `adr/` | Architecture Decision Records (ADR-0001…). | Planned |
+| [`adr/`](./adr/) | Architecture Decision Records. [ADR-0001](./adr/ADR-0001-modular-monolith.md): run the Java backend as one modular monolith. | Active |
 
 ## Tech stack (target)
 
@@ -56,8 +58,7 @@ flowchart LR
     IndexB[index-builder-service]
   end
   subgraph workers [Python workers]
-    Parser[resume-parser-worker]
-    Embed[embedding-worker]
+    AIW[insyght-ai-worker]
   end
   subgraph data [Data plane]
     PG[(PostgreSQL)]
@@ -84,10 +85,8 @@ flowchart LR
   Gateway --> OS
   Auto --> REDIS
   Ingest --> KAF
-  KAF --> Parser
-  KAF --> Embed
-  Parser --> KAF
-  Embed --> KAF
+  KAF --> AIW
+  AIW --> KAF
   Apps --> PG
   Jobs --> PG
   Cands --> PG

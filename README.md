@@ -50,10 +50,8 @@ services-java/                     Spring Boot 4.x, Java 21, JPA, Flyway, Spring
 services-go/                       Go 1.23+, chi/v5, opensearch-go, slog
   search-gateway/                  Public + tenant search, autocomplete, internal bulk-index
 
-workers-python/                    Python 3.12+, kafka-python, pydantic, boto3
-  resume-parser-worker/            PDF/DOCX → structured fields
-  ai-artifact-worker/              Cover letters, summaries, match explanations (pluggable LLM provider)
-  embedding-worker/                Vector indexing (post-MVP)
+workers-python/                    Python 3.12+, kafka-python, boto3
+  insyght-ai-worker/               One worker: parse_resume, embed, generate_artifact (model calls via the AI gateway)
 
 packages/                          Shared TypeScript packages (pnpm workspaces, TurboRepo)
   shared-contracts/                OpenAPI YAMLs, JSON Schemas, Kafka topic specs
@@ -265,22 +263,14 @@ curl -s 'http://localhost:8086/v1/search/jobs?q=engineer' \
 ### 6.6 Run Python workers
 
 ```bash
-# Resume parser
-cd workers-python/resume-parser-worker
+cd workers-python/insyght-ai-worker
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-python -m resume_parser_worker
-
-# AI artifact worker
-cd workers-python/ai-artifact-worker
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-python -m ai_artifact_worker
+python -m insyght_ai_worker            # all handlers; or INSYGHT_AI_WORKER_HANDLERS=parse_resume
 ```
 
-Both workers default to a deterministic `StubProvider` so you can
-run them offline; LLM provider extras (`pip install -e .[openai]`)
-are optional.
+The worker uses a deterministic `StubGateway`, so it runs offline. Real model providers arrive with
+the AI gateway (IATS-104). See [`workers-python/insyght-ai-worker/README.md`](workers-python/insyght-ai-worker/README.md).
 
 ## 7. Database migrations + seed data
 
@@ -327,9 +317,8 @@ Quick commands:
 # Go
 cd services-go/search-gateway && go test ./...
 
-# Python (per worker)
-cd workers-python/resume-parser-worker && PYTHONPATH=src pytest
-cd workers-python/ai-artifact-worker  && PYTHONPATH=src pytest
+# Python
+cd workers-python/insyght-ai-worker && ruff check . && PYTHONPATH=src pytest
 
 # TypeScript
 pnpm -r tsc --noEmit

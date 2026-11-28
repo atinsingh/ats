@@ -8,6 +8,8 @@
 
 ## 1. Modular monolith philosophy
 
+> **Decision update (ADR-0001, 2026-11-21):** the modules below deploy together as one Spring Boot application, `insyght-core`, built with Spring Modulith. Boundaries are enforced by `ApplicationModules.verify()`, cross-module calls are in process, and one event publication registry replaces the per-module outboxes. See [`adr/ADR-0001-modular-monolith.md`](./adr/ADR-0001-modular-monolith.md). The text below describes the original per-JVM layout and is kept until the migration stories (epic IATS-133) land.
+
 For MVP we run a **modular monolith** at the team level: each module is a Gradle subproject under `services-java/` with strict package boundaries; modules deploy as separate Spring Boot applications today (one JVM per module) but could collapse into a single JVM later if operational simplicity wins. The distinction between "module" and "service" is fuzzy by design — code is organized as if everything could be split, but split only when measurement says so.
 
 **Rules:**
@@ -35,7 +37,7 @@ For MVP we run a **modular monolith** at the team level: each module is a Gradle
 | 12 | `services-java:interview-service` (post-MVP, optional) | interviews, feedback (extracted from application-service if needed) | optional |
 | 13 | `services-java:offer-service` (post-MVP, optional) | offers, approvals, documents | optional |
 
-For MVP, sticking with the existing 9 modules + new `audit-service` is enough. Interview and Offer can live inside `application-service` as packages until volume warrants extraction.
+Per ADR-0001 these rows become module packages inside `insyght-core` rather than separate Spring Boot applications; the Gradle paths above remain until each module moves (IATS-136 to IATS-142). For MVP, sticking with the existing 9 modules + new `audit-service` is enough. Interview and Offer can live inside `application-service` as packages until volume warrants extraction.
 
 ## 3. Per-module package layout
 
