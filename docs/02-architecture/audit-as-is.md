@@ -1,5 +1,9 @@
 # Architecture audit — as-is snapshot
 
+> **Stale as of 2026-11-10.** The code has moved well past this snapshot (outboxes, state machines,
+> resume storage and tests now exist; several new defects were found). Read
+> [`as-is-verification-2026-11.md`](./as-is-verification-2026-11.md) for the code-verified state.
+
 > **Snapshot date:** initial documentation pass. **Update this doc whenever a service crosses a stub-vs-real boundary.** Everything described here was verified by reading the code; treat it as the canonical baseline against which the to-be docs in this repo are written.
 
 ## 1. Monorepo layout

@@ -7,6 +7,7 @@ Everything related to AI-generated content on the platform: artifact lifecycle, 
 | File | Purpose | Status |
 |------|---------|--------|
 | `ai-artifact-platform.md` | Artifact types (resume variant, cover letter, candidate summary, match explanation, interview Q&A), lifecycle states (DRAFT → READY_FOR_REVIEW → APPROVED → REJECTED → ARCHIVED), metadata, audit, APIs. | Planned (Prompt 23) |
+| [`matching-scoring-and-resume-fixing-design.md`](./matching-scoring-and-resume-fixing-design.md) | Design for the assessment model, matching pipeline, scoring rubric, fact-bounded resume fixing, safety controls and release gates. | Proposal |
 | `prompt-and-model-registry.md` | Versioning of prompts and model identifiers, change-control process, A/B testing, rollback. | Planned |
 | `quotas-and-cost-controls.md` | Per-tenant AI credit budgets, per-user soft limits, abuse detection, throttling. | Planned |
 | `worker-contracts.md` | Kafka topics and payload schemas the AI workers consume and produce. | Planned |
