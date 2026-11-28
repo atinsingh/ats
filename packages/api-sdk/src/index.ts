@@ -194,6 +194,41 @@ export type ClientInput = {
   msaEndsOn?: string;
 };
 
+export type SubmittalStatus =
+  | 'AWAITING_APPROVAL'
+  | 'CLIENT_REVIEWING'
+  | 'INTERVIEW'
+  | 'OFFER'
+  | 'CLIENT_PASSED'
+  | 'WITHDRAWN';
+
+/** A candidate put forward to a client (application-service). Approving records a person sent it. */
+export type SubmittalRecord = {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  candidateProfileId: string;
+  clientId?: string | null;
+  channel: string;
+  status: SubmittalStatus;
+  /** Dollars per hour. */
+  billRate?: number | null;
+  ownerUserId?: string | null;
+  approvedByUserId?: string | null;
+  submittedAt?: string | null;
+  lastClientActivityAt?: string | null;
+  latestNote?: string | null;
+  createdAt: string;
+};
+
+export type CreateSubmittalInput = {
+  applicationId: string;
+  clientId?: string;
+  channel?: string;
+  billRate?: number;
+  ownerUserId?: string;
+};
+
 export type InterviewType = 'PHONE' | 'VIDEO' | 'ONSITE' | 'TECHNICAL' | 'PANEL';
 export type InterviewStatus = 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
@@ -617,6 +652,39 @@ export function createJobocateClient(options: JobocateClientOptions) {
         request<ClientRecord>(`/api/v1/clients/${encodeURIComponent(id)}`, {
           method: 'PATCH',
           body: JSON.stringify(input),
+        }),
+    },
+    submittals: {
+      /** Newest first. Recruiter roles only. */
+      list: (params?: { status?: SubmittalStatus; limit?: number }) => {
+        const qs = new URLSearchParams();
+        if (params?.status) qs.set('status', params.status);
+        if (params?.limit != null) qs.set('limit', String(params.limit));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return request<SubmittalRecord[]>(`/api/v1/submittals${suffix}`);
+      },
+      get: (id: string) =>
+        request<SubmittalRecord>(`/api/v1/submittals/${encodeURIComponent(id)}`),
+      /** Creates it waiting for approval. Nothing goes to the client. */
+      create: (input: CreateSubmittalInput) =>
+        request<SubmittalRecord>(`/api/v1/submittals`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      /** A person approves it; needs getUserId. Records that they sent it to the client. */
+      approve: (id: string) =>
+        request<SubmittalRecord>(`/api/v1/submittals/${encodeURIComponent(id)}/approve`, {
+          method: 'POST',
+        }),
+      clientUpdate: (id: string, input: { status?: SubmittalStatus; note?: string }) =>
+        request<SubmittalRecord>(`/api/v1/submittals/${encodeURIComponent(id)}/client-update`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      withdraw: (id: string, reason?: string) =>
+        request<SubmittalRecord>(`/api/v1/submittals/${encodeURIComponent(id)}/withdraw`, {
+          method: 'POST',
+          body: JSON.stringify({ reason }),
         }),
     },
     interviews: {

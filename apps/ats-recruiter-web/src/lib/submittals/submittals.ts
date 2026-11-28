@@ -30,8 +30,8 @@ export interface Submittal {
   /** How it reaches the client, e.g. "Beeline", "Fieldglass" or "direct". */
   channel: string;
   status: SubmittalStatus;
-  /** Bill rate in dollars per hour. */
-  billRate: number;
+  /** Bill rate in dollars per hour, if set. */
+  billRate?: number;
   /** When the candidate was shortlisted for this job. */
   shortlistedAt?: string;
   /** When it went to the client. Missing while it waits for approval or is blocked. */
@@ -145,3 +145,9 @@ export function submittalStats(rows: readonly Submittal[], now: Date): Submittal
 export const clientsOf = (rows: readonly Submittal[]): string[] => [
   ...new Set(rows.map((s) => s.client)),
 ];
+
+/** "$92.50/hr", "$95/hr", or "Not set". */
+export function formatBillRate(rate: number | undefined): string {
+  if (rate === undefined) return 'Not set';
+  return `$${Number.isInteger(rate) ? rate : rate.toFixed(2)}/hr`;
+}

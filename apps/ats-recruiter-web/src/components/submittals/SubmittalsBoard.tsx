@@ -12,6 +12,7 @@ import {
   clientsOf,
   filterSubmittals,
   followUpDue,
+  formatBillRate,
   sortSubmittals,
   submittalStats,
   type Submittal,
@@ -71,7 +72,7 @@ export function SubmittalsBoard({
     <div className="flex flex-col gap-4">
       {representative ? (
         <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
-          Representative data. The submittal service is not connected yet, so these rows are
+          Representative data. The submittal service could not be reached, so these rows are
           samples. Nothing is sent from this page.
         </p>
       ) : null}
@@ -246,7 +247,14 @@ export function SubmittalsBoard({
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-right tabular-nums">${s.billRate}/hr</td>
+                    <td
+                      className={cn(
+                        'px-3 py-3 text-right tabular-nums',
+                        s.billRate === undefined && 'text-muted-foreground',
+                      )}
+                    >
+                      {formatBillRate(s.billRate)}
+                    </td>
                     <td className="px-3 py-3 text-muted-foreground">
                       {s.block?.kind === 'margin' ? s.block.detail : s.latest}
                       {due ? (
