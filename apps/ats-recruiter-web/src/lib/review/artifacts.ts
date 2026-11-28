@@ -1,5 +1,11 @@
-import type { AiArtifact, AiArtifactKind, AiArtifactSubjectType } from '@jobocate/api-sdk';
+import type {
+  AiArtifact,
+  AiArtifactKind,
+  AiArtifactSubjectType,
+  SubmittalRecord,
+} from '@jobocate/api-sdk';
 
+import type { SubmittalNames } from '../submittals/live';
 import type { Check, Proposal } from './queue';
 
 /**
@@ -69,6 +75,60 @@ export function artifactToProposal(a: AiArtifact, now: Date = new Date()): Propo
     dueAt: since,
     dueLabel: waitingLabel(since, now),
     approveLabel: 'Approve draft',
+    checks,
+    evidence: [],
+  };
+}
+
+/** A submittal declined in the queue is withdrawn with this reason. */
+export const DECLINE_REASON = 'Declined in the Review queue';
+
+function formatRate(rate: number | null | undefined): string | null {
+  if (typeof rate !== 'number') return null;
+  return `$${Number.isInteger(rate) ? rate : rate.toFixed(2)}/hr`;
+}
+
+/**
+ * A submittal waiting for approval, as a Review queue proposal. Approving only records that the
+ * person sent it to the client: nothing is sent from the queue.
+ */
+export function submittalToProposal(
+  s: SubmittalRecord,
+  names: SubmittalNames,
+  now: Date = new Date(),
+): Proposal {
+  const candidate = names.candidates.get(s.candidateProfileId) ?? 'a candidate';
+  const job = names.jobs.get(s.jobId) ?? 'a job that was not found';
+  const client = s.clientId ? (names.clients.get(s.clientId) ?? 'a client not found') : null;
+  const rate = formatRate(s.billRate);
+  const checks: Check[] = [];
+  if (!client) {
+    checks.push({
+      status: 'warn',
+      title: 'No client set',
+      detail: 'This submittal has no client on record. Check who it goes to before you send it.',
+    });
+  }
+  if (!rate) {
+    checks.push({
+      status: 'warn',
+      title: 'No bill rate',
+      detail: 'Agree the rate before you send it.',
+    });
+  }
+  const parts = [`For ${job}`, rate ? `at ${rate}` : null, `through ${s.channel || 'Direct'}`];
+  return {
+    id: s.id,
+    kind: 'submittal',
+    agent: 'Submittal',
+    title: `Submit ${candidate} to ${client ?? 'a client'}`,
+    summary: `${parts.filter(Boolean).join(' ')}.`,
+    editable: false,
+    destination:
+      'nowhere from here. Approving records that you sent it to the client yourself; declining withdraws it',
+    dueAt: s.createdAt,
+    dueLabel: waitingLabel(s.createdAt, now),
+    approveLabel: 'Approve submittal',
     checks,
     evidence: [],
   };
