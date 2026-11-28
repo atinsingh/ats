@@ -16,6 +16,7 @@ import {
   greeting,
   interviewsToday,
   longDate,
+  sampleNote,
   type Attention,
   type Tone,
 } from '../../../lib/home/home';
@@ -23,6 +24,13 @@ import { businessDays, localDay, zonedToIso } from '../../../lib/interviews/inte
 import { representativeInterviews } from '../../../lib/interviews/representative';
 import { placementFlags, placementTotals } from '../../../lib/placements/placements';
 import { representativePlacements } from '../../../lib/placements/representative';
+import {
+  loadAgenda,
+  loadLiveProposals,
+  loadPlacements,
+  loadSubmittals,
+} from '../../../lib/live/loaders';
+import { readRecruiterConfig } from '../../../lib/recruiter-config';
 import { isBlocked } from '../../../lib/review/queue';
 import { representativeProposals } from '../../../lib/review/representative';
 import { followUpDue, submittalStats } from '../../../lib/submittals/submittals';
@@ -63,9 +71,17 @@ function Tile({
   );
 }
 
-export default function CommandCenterPage() {
-  // Summarises the same labelled representative data the modules use (IATS-171 is screens first).
+export default async function CommandCenterPage() {
+  // Summarises the same data each module shows: real wherever its service answers, labelled
+  // samples otherwise. Agent runs and connections have no service yet, so they stay samples.
   // It only links to the modules; every decision is still made in the Review queue.
+  const cfg = readRecruiterConfig();
+  const [liveProposals, liveAgenda, liveSubmittals, livePlacements] = await Promise.all([
+    loadLiveProposals(cfg),
+    loadAgenda(cfg),
+    loadSubmittals(cfg),
+    loadPlacements(cfg),
+  ]);
   const now = new Date();
   const today = localDay(now, FIRM_TIME_ZONE);
   const days = businessDays(now, FIRM_TIME_ZONE, 5);
@@ -78,16 +94,16 @@ export default function CommandCenterPage() {
     return iso > now.toISOString() ? now.toISOString() : iso;
   };
 
-  const proposals = representativeProposals(now);
+  const proposals = liveProposals ?? representativeProposals(now);
   const decisions = decisionSummary(proposals, now);
   const interviews = interviewsToday(
-    representativeInterviews(days, toIso, now),
+    liveAgenda ?? representativeInterviews(days, toIso, now),
     now,
     FIRM_TIME_ZONE,
   );
-  const submittals = representativeSubmittals(now);
+  const submittals = liveSubmittals ?? representativeSubmittals(now);
   const subStats = submittalStats(submittals, now);
-  const placements = representativePlacements(today);
+  const placements = livePlacements ?? representativePlacements(today);
   const placeTotals = placementTotals(placements, today);
   const overnight = representativeRuns(at)
     .filter((r) => now.getTime() - Date.parse(r.at) <= 24 * 3_600_000)
@@ -143,14 +159,22 @@ export default function CommandCenterPage() {
   );
 
   const next = decisions.next;
+  const note = sampleNote([
+    { label: 'the Review queue', live: liveProposals !== null },
+    { label: 'interviews', live: liveAgenda !== null },
+    { label: 'submittals', live: liveSubmittals !== null },
+    { label: 'placements', live: livePlacements !== null },
+    { label: 'agent activity', live: false },
+  ]);
 
   return (
     <RecruiterShell hideNewJob title="Command center" subtitle={longDate(now, FIRM_TIME_ZONE)}>
       <div className="flex flex-col gap-5">
-        <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
-          Representative data. These figures come from the same samples as each module until their
-          services are connected.
-        </p>
+        {note ? (
+          <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
+            {note}
+          </p>
+        ) : null}
 
         <section
           aria-labelledby="decisions-title"

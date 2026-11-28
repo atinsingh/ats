@@ -1,4 +1,3 @@
-import type { PlacementRecord } from '@jobocate/api-sdk';
 import { cn } from '@jobocate/ui';
 
 import { RecruiterShell } from '../../../components/RecruiterShell';
@@ -17,11 +16,9 @@ import {
   type Flag,
   type PlacementStatus,
 } from '../../../lib/placements/placements';
-import { toPlacementRows } from '../../../lib/placements/live';
-import type { Placement } from '../../../lib/placements/placements';
 import { representativePlacements } from '../../../lib/placements/representative';
-import { readRecruiterConfig, type RecruiterConfig } from '../../../lib/recruiter-config';
-import { loadSubmittalNames, recruiterClient } from '../../../lib/submittals/names';
+import { loadPlacements } from '../../../lib/live/loaders';
+import { readRecruiterConfig } from '../../../lib/recruiter-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,19 +46,6 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
       {note ? <p className="text-caption text-muted-foreground">{note}</p> : null}
     </div>
   );
-}
-
-/** The tenant's real placements, or null when application-service can't be reached. */
-async function loadPlacements(cfg: RecruiterConfig): Promise<Placement[] | null> {
-  if (!cfg.applicationServiceUrl) return null;
-  let rows: PlacementRecord[];
-  try {
-    rows = await recruiterClient(cfg, cfg.applicationServiceUrl).placements.list(200);
-  } catch {
-    return null;
-  }
-  // The same name lookups as submittals: candidate, job and client by id.
-  return toPlacementRows(rows, await loadSubmittalNames(cfg, rows));
 }
 
 export default async function PlacementsPage() {

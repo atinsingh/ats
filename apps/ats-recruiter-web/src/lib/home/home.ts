@@ -115,3 +115,30 @@ export const clock = (iso: string, timeZone: string) =>
   new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }).format(
     new Date(iso),
   );
+
+/** One Command center source and whether it came from its live service. */
+export interface Source {
+  label: string;
+  live: boolean;
+}
+
+/** "a", "a and b", "a, b and c". */
+function listWords(words: readonly string[]): string {
+  if (words.length <= 1) return words.join('');
+  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+}
+
+/**
+ * The note above the Command center saying which figures are samples. Null when every source is
+ * live, so nothing real is labelled as a sample and no sample passes as real.
+ */
+export function sampleNote(sources: readonly Source[]): string | null {
+  const samples = sources.filter((s) => !s.live).map((s) => s.label);
+  if (!samples.length) return null;
+  if (samples.length === sources.length) {
+    return 'Representative data. These figures come from the same samples as each module until their services are connected.';
+  }
+  const live = sources.filter((s) => s.live).map((s) => s.label);
+  return `Live: ${listWords(live)}. Representative samples until their services are connected: ${listWords(samples)}.`;
+}
+

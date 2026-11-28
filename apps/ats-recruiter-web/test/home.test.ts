@@ -97,3 +97,23 @@ test('attention list puts danger first, then by time, and drops duplicates', () 
     ['d', 'w-early', 'w-late', 'w-none', 'i'],
   );
 });
+
+test('sampleNote names live and sample sources, and is null when all are live', async () => {
+  const { sampleNote } = await import('../src/lib/home/home.ts');
+  assert.equal(sampleNote([{ label: 'interviews', live: true }]), null);
+  assert.match(
+    sampleNote([
+      { label: 'interviews', live: false },
+      { label: 'placements', live: false },
+    ]) ?? '',
+    /^Representative data\./,
+  );
+  assert.equal(
+    sampleNote([
+      { label: 'the Review queue', live: true },
+      { label: 'interviews', live: true },
+      { label: 'agent runs', live: false },
+    ]),
+    'Live: the Review queue and interviews. Representative samples until their services are connected: agent runs.',
+  );
+});
