@@ -17,10 +17,15 @@ export function ownerLabel(ownerUserId: string | null | undefined, viewerUserId:
 }
 
 /**
- * Revenue stays unset: placements are not tracked yet, so the list says "Not tracked" rather than
- * showing a made-up $0.
+ * Revenue comes from `revenue` (estimated from placements) when it was loaded: a client with no
+ * placements then reads $0. Without it, revenue stays unset so the list says "Not tracked" rather
+ * than showing a made-up $0.
  */
-export function toClientRows(rows: readonly ClientRecord[], viewerUserId: string): Client[] {
+export function toClientRows(
+  rows: readonly ClientRecord[],
+  viewerUserId: string,
+  revenue?: ReadonlyMap<string, number>,
+): Client[] {
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
@@ -30,5 +35,6 @@ export function toClientRows(rows: readonly ClientRecord[], viewerUserId: string
     owner: ownerLabel(r.ownerUserId, viewerUserId),
     lastContactAt: r.lastContactAt ?? undefined,
     msaEndsAt: r.msaEndsOn ?? undefined,
+    revenue12m: revenue ? Math.round(revenue.get(r.id) ?? 0) : undefined,
   }));
 }
