@@ -38,6 +38,12 @@ public class SecurityConfig {
                                         Role.HIRING_MANAGER.name(),
                                         Role.TENANT_ADMIN.name(),
                                         Role.SUPER_ADMIN.name())
+                                .requestMatchers("/api/v1/placements", "/api/v1/placements/**")
+                                .hasAnyRole(
+                                        Role.RECRUITER.name(),
+                                        Role.HIRING_MANAGER.name(),
+                                        Role.TENANT_ADMIN.name(),
+                                        Role.SUPER_ADMIN.name())
                                 .requestMatchers("/api/v1/submittals", "/api/v1/submittals/**")
                                 .hasAnyRole(
                                         Role.RECRUITER.name(),

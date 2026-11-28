@@ -1,3 +1,4 @@
+import type { PlacementRecord } from '@jobocate/api-sdk';
 import { cn } from '@jobocate/ui';
 
 import { RecruiterShell } from '../../../components/RecruiterShell';
@@ -16,7 +17,11 @@ import {
   type Flag,
   type PlacementStatus,
 } from '../../../lib/placements/placements';
+import { toPlacementRows } from '../../../lib/placements/live';
+import type { Placement } from '../../../lib/placements/placements';
 import { representativePlacements } from '../../../lib/placements/representative';
+import { readRecruiterConfig, type RecruiterConfig } from '../../../lib/recruiter-config';
+import { loadSubmittalNames, recruiterClient } from '../../../lib/submittals/names';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,11 +51,26 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
   );
 }
 
-export default function PlacementsPage() {
-  // No back-office sync exists yet (IATS-168 is screens first), so placements are labelled
-  // representative data. Pay, bill and timesheets stay in the back office; this view is read-only.
+/** The tenant's real placements, or null when application-service can't be reached. */
+async function loadPlacements(cfg: RecruiterConfig): Promise<Placement[] | null> {
+  if (!cfg.applicationServiceUrl) return null;
+  let rows: PlacementRecord[];
+  try {
+    rows = await recruiterClient(cfg, cfg.applicationServiceUrl).placements.list(200);
+  } catch {
+    return null;
+  }
+  // The same name lookups as submittals: candidate, job and client by id.
+  return toPlacementRows(rows, await loadSubmittalNames(cfg, rows));
+}
+
+export default async function PlacementsPage() {
+  // Real placements whenever application-service answers; otherwise labelled representative
+  // data. Pay, bill and timesheets stay in the back office; this view is read-only.
+  const cfg = readRecruiterConfig();
   const today = localDay(new Date(), FIRM_TIME_ZONE);
-  const all = representativePlacements(today);
+  const live = await loadPlacements(cfg);
+  const all = live ?? representativePlacements(today);
   const rows = sortPlacements(all, today);
   const totals = placementTotals(all, today);
 
@@ -61,10 +81,12 @@ export default function PlacementsPage() {
       subtitle="People on assignment from your desk. Pay, bill and timesheets run in your back office; this shows them so you can act on extensions and redeployment."
     >
       <div className="flex flex-col gap-4">
-        <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
-          Representative data. Your back office is not connected yet, so these placements are
-          samples.
-        </p>
+        {live === null ? (
+          <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
+            Representative data. The placement service could not be reached, so these placements
+            are samples.
+          </p>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Stat label="On assignment" value={String(totals.onAssignment)} />

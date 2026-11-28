@@ -16,6 +16,9 @@ public final class ApplicationErrorCodes {
 
     public static final String INTERVIEW_NOT_FOUND = "INTERVIEW_NOT_FOUND";
     public static final String INTERVIEW_INVALID_STATE = "INTERVIEW_INVALID_STATE";
+    public static final String PLACEMENT_NOT_FOUND = "PLACEMENT_NOT_FOUND";
+    public static final String PLACEMENT_DUPLICATE = "PLACEMENT_DUPLICATE";
+    public static final String PLACEMENT_NOT_HIRED = "PLACEMENT_NOT_HIRED";
     public static final String SUBMITTAL_NOT_FOUND = "SUBMITTAL_NOT_FOUND";
     public static final String SUBMITTAL_DUPLICATE = "SUBMITTAL_DUPLICATE";
     public static final String SUBMITTAL_INVALID_STATE = "SUBMITTAL_INVALID_STATE";
