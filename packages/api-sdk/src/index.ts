@@ -168,6 +168,37 @@ export type ResumeParsedFields = {
   reviewStatus: 'PENDING' | 'PROPOSED' | 'APPLIED' | 'REJECTED';
 };
 
+export type InterviewType = 'PHONE' | 'VIDEO' | 'ONSITE' | 'TECHNICAL' | 'PANEL';
+export type InterviewStatus = 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
+export type InterviewRecord = {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  type: InterviewType;
+  status: InterviewStatus;
+  scheduledStart: string;
+  scheduledEnd: string;
+  location?: string | null;
+  meetingUrl?: string | null;
+  cancellationReason?: string | null;
+  createdAt?: string | null;
+};
+
+export type InterviewRecommendation = 'STRONG_HIRE' | 'HIRE' | 'NO_HIRE' | 'STRONG_NO_HIRE';
+
+export type InterviewFeedback = {
+  id: string;
+  interviewId: string;
+  applicationId: string;
+  interviewerUserId: string;
+  overallScore?: number | null;
+  recommendation?: InterviewRecommendation | null;
+  scores: { area: string; score: number; note?: string | null }[];
+  summary?: string | null;
+  submittedAt: string;
+};
+
 export type ApplicationSummary = {
   id: string;
   jobId: string;
@@ -542,6 +573,53 @@ export function createJobocateClient(options: JobocateClientOptions) {
       archive: (id: string) =>
         request<AiArtifact>(`/api/v1/ai-artifacts/${encodeURIComponent(id)}/archive`, {
           method: 'POST',
+        }),
+    },
+    interviews: {
+      /** Scheduled and rescheduled interviews in a window, soonest first. Recruiter roles only. */
+      upcoming: (params?: { from?: string; to?: string; limit?: number }) => {
+        const qs = new URLSearchParams();
+        if (params?.from) qs.set('from', params.from);
+        if (params?.to) qs.set('to', params.to);
+        if (params?.limit != null) qs.set('limit', String(params.limit));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return request<InterviewRecord[]>(`/api/v1/interviews${suffix}`);
+      },
+      forApplication: (applicationId: string) =>
+        request<InterviewRecord[]>(
+          `/api/v1/interviews?applicationId=${encodeURIComponent(applicationId)}`,
+        ),
+      schedule: (input: {
+        applicationId: string;
+        type: InterviewType;
+        scheduledStart: string;
+        scheduledEnd: string;
+        location?: string;
+        meetingUrl?: string;
+      }) =>
+        request<InterviewRecord>(`/api/v1/interviews`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      cancel: (id: string, reason: string) =>
+        request<InterviewRecord>(`/api/v1/interviews/${encodeURIComponent(id)}/cancel`, {
+          method: 'POST',
+          body: JSON.stringify({ reason }),
+        }),
+      feedback: (id: string) =>
+        request<InterviewFeedback[]>(`/api/v1/interviews/${encodeURIComponent(id)}/feedback`),
+      submitFeedback: (
+        id: string,
+        input: {
+          overallScore?: number;
+          recommendation?: InterviewRecommendation;
+          scores?: { area: string; score: number; note?: string }[];
+          summary?: string;
+        },
+      ) =>
+        request<InterviewFeedback>(`/api/v1/interviews/${encodeURIComponent(id)}/feedback`, {
+          method: 'POST',
+          body: JSON.stringify(input),
         }),
     },
     savedJobs: {

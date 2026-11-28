@@ -25,6 +25,8 @@ const STATUS: Record<InterviewStatus, { label: string; tone: string }> = {
   confirmed: { label: 'Confirmed', tone: 'bg-success-soft text-success' },
   'reschedule-requested': { label: 'Reschedule asked', tone: 'bg-warning-soft text-warning' },
   'awaiting-confirmation': { label: 'Awaiting reply', tone: 'bg-muted text-muted-foreground' },
+  scheduled: { label: 'Scheduled', tone: 'bg-muted text-foreground' },
+  rescheduled: { label: 'Rescheduled', tone: 'bg-warning-soft text-warning' },
 };
 
 interface Meeting {
@@ -44,6 +46,7 @@ export function InterviewsBoard({
   now,
   timeZone,
   representative,
+  liveAgenda = false,
 }: {
   days: string[];
   attendees: Attendee[];
@@ -53,6 +56,8 @@ export function InterviewsBoard({
   now: string;
   timeZone: string;
   representative: boolean;
+  /** True when "This week" shows real interviews while the rest is still samples. */
+  liveAgenda?: boolean;
 }) {
   const at = useMemo(() => new Date(now), [now]);
   const grid = useMemo(
@@ -71,7 +76,12 @@ export function InterviewsBoard({
 
   return (
     <div className="flex flex-col gap-4">
-      {representative ? (
+      {representative && liveAgenda ? (
+        <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
+          This week shows real interviews. The time finder and the scorecard are still samples,
+          because calendars and the scorecard form are not connected yet. Nothing is sent.
+        </p>
+      ) : representative ? (
         <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
           Representative data. Calendars and the interview service are not connected yet, so these
           times and interviews are samples. Nothing is sent.

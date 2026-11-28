@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Maps application exceptions to the canonical error envelope defined in
@@ -41,6 +43,28 @@ public class RestExceptionHandler {
                 409,
                 ApplicationErrorCodes.OPTIMISTIC_LOCK_CONFLICT,
                 "Resource was modified concurrently — refresh and retry",
+                null,
+                req);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handle(
+            MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
+        return envelope(
+                400,
+                ApplicationErrorCodes.VALIDATION_FAILED,
+                "Invalid value for " + ex.getName(),
+                null,
+                req);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handle(
+            HttpMessageNotReadableException ex, HttpServletRequest req) {
+        return envelope(
+                400,
+                ApplicationErrorCodes.VALIDATION_FAILED,
+                "The request body could not be read",
                 null,
                 req);
     }

@@ -127,7 +127,12 @@ export function formatTime(time: string): string {
 
 export const formatSlot = (s: Slot) => `${formatDay(s.day)}, ${formatTime(s.time)}`;
 
-export type InterviewStatus = 'confirmed' | 'reschedule-requested' | 'awaiting-confirmation';
+export type InterviewStatus =
+  | 'confirmed'
+  | 'reschedule-requested'
+  | 'awaiting-confirmation'
+  | 'scheduled'
+  | 'rescheduled';
 
 export interface Interview {
   id: string;
