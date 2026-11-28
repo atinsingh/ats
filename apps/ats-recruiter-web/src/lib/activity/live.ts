@@ -44,11 +44,16 @@ const TIMELINE: Record<string, string> = {
   AI_ARTIFACT_LINKED: 'Linked an AI draft',
 };
 
-function actorName(r: ActivityRecord, viewerUserId: string): string {
+function actorName(
+  r: ActivityRecord,
+  viewerUserId: string,
+  colleagues: ReadonlyMap<string, string>,
+): string {
   if (r.actorKind === 'AGENT') return 'AI agent';
   if (r.actorKind === 'SYSTEM') return 'System';
   if (!r.actorUserId) return 'A recruiter';
-  return r.actorUserId === viewerUserId ? 'You' : 'Teammate';
+  if (r.actorUserId === viewerUserId) return 'You';
+  return colleagues.get(r.actorUserId) ?? 'Teammate';
 }
 
 function subject(r: ActivityRecord, names: SubmittalNames): string {
@@ -98,6 +103,8 @@ export function toActivityEvents(
   rows: readonly ActivityRecord[],
   names: SubmittalNames,
   viewerUserId: string,
+  /** Colleague names by user id; unknown people read "Teammate". */
+  colleagues: ReadonlyMap<string, string> = new Map(),
 ): ActivityEvent[] {
   return rows.map((r) => {
     const d = describe(r);
@@ -105,7 +112,7 @@ export function toActivityEvents(
       id: r.id,
       at: r.at,
       actorKind: ACTOR[r.actorKind] ?? 'system',
-      actor: actorName(r, viewerUserId),
+      actor: actorName(r, viewerUserId, colleagues),
       type: d.type,
       action: d.action,
       subject: subject(r, names),

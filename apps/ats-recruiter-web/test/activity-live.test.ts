@@ -84,3 +84,13 @@ test('unknown codes and missing names read plainly', () => {
   assert.equal(e!.actor, 'System');
   assert.equal(e!.subject, 'Candidate not found');
 });
+
+test('names a known colleague instead of "Teammate"', () => {
+  const [e] = toActivityEvents(
+    [rec({ actorUserId: 'u2' })],
+    names,
+    'u1',
+    new Map([['u2', 'Sample Colleague']]),
+  );
+  assert.equal(e!.actor, 'Sample Colleague');
+});

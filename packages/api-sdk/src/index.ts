@@ -106,6 +106,15 @@ export type CandidateSummary = {
   headline?: string | null;
 };
 
+/** Someone who works at your firm. Never includes candidates. */
+export type Colleague = {
+  id: string;
+  displayName?: string | null;
+  email: string;
+  roles: string[];
+  lastLoginAt?: string | null;
+};
+
 /** A job's must-haves for searching your own database. */
 export type TalentQuery = {
   titles: string[];
@@ -740,6 +749,10 @@ export function createJobocateClient(options: JobocateClientOptions) {
           method: 'PATCH',
           body: JSON.stringify(input),
         }),
+    },
+    colleagues: {
+      /** Staff at your firm, from tenant-auth-service. Recruiter roles only. */
+      list: () => request<Colleague[]>(`/api/v1/colleagues`),
     },
     activity: {
       /** Newest first, up to 500. Recruiter roles only. */

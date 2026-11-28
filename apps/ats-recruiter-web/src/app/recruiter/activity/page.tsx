@@ -2,6 +2,7 @@ import { ActivityLogBoard } from '../../../components/activity/ActivityLogBoard'
 import { RecruiterShell } from '../../../components/RecruiterShell';
 import type { ActivityEvent } from '../../../lib/activity/activity';
 import { toActivityEvents } from '../../../lib/activity/live';
+import { loadColleagueNames } from '../../../lib/colleagues/names';
 import { representativeActivity } from '../../../lib/activity/representative';
 import { localDay, zonedToIso } from '../../../lib/interviews/interviews';
 import { readRecruiterConfig, type RecruiterConfig } from '../../../lib/recruiter-config';
@@ -17,6 +18,7 @@ async function loadActivity(cfg: RecruiterConfig): Promise<ActivityEvent[] | nul
   if (!cfg.applicationServiceUrl) return null;
   try {
     const rows = await recruiterClient(cfg, cfg.applicationServiceUrl).activity.list(200);
+    const colleagues = loadColleagueNames(cfg);
     const names = await loadSubmittalNames(
       cfg,
       rows.map((r) => ({
@@ -25,7 +27,7 @@ async function loadActivity(cfg: RecruiterConfig): Promise<ActivityEvent[] | nul
         clientId: null,
       })),
     );
-    return toActivityEvents(rows, names, cfg.recruiterUserId);
+    return toActivityEvents(rows, names, cfg.recruiterUserId, await colleagues);
   } catch {
     return null;
   }
