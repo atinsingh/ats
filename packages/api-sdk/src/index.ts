@@ -232,6 +232,17 @@ export type CreateSubmittalInput = {
 export type PlacementExtension = 'NONE' | 'ASKED' | 'AGREED' | 'DECLINED';
 
 /** A person hired a candidate for a client (application-service). Dates are YYYY-MM-DD. */
+/** Desk report over the last `days` days. Counts only; no money is tracked yet. */
+export type DeskReport = {
+  days: number;
+  since: string;
+  funnel: { stage: string; count: number }[];
+  /** By application source: DIRECT, JOB_BOARD, IMPORT or REFERRAL. */
+  sources: { source: string; applications: number; submitted: number; started: number }[];
+  /** By AI artifact kind: drafts put up for review and how people decided. */
+  agents: { kind: string; proposals: number; approved: number; rejected: number }[];
+};
+
 export type PlacementRecord = {
   id: string;
   applicationId: string;
@@ -682,6 +693,13 @@ export function createJobocateClient(options: JobocateClientOptions) {
           method: 'PATCH',
           body: JSON.stringify(input),
         }),
+    },
+    reports: {
+      /** Funnel, sources and agent decisions. Recruiter roles only. */
+      desk: (days?: number) =>
+        request<DeskReport>(
+          `/api/v1/reports/desk${days != null ? `?days=${encodeURIComponent(String(days))}` : ''}`,
+        ),
     },
     placements: {
       /** Newest start first. Recruiter roles only. */

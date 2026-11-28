@@ -75,12 +75,17 @@ export function ReportsBoard({
         <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
           Representative data. Reporting is not connected yet, so these figures are samples.
         </p>
-      ) : null}
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          From applications, submittals, interviews, offers, placements and agent drafts in the last
+          90 days. Spend, edits and time saved are not tracked yet, so they show –.
+        </p>
+      )}
 
       <Section
         id="funnel-title"
         title="Funnel"
-        hint="All jobs on your desk. Agents source; people decide every move after Contacted."
+        hint="All jobs on your desk. Agents prepare; people decide every move."
         onExport={() =>
           download(
             'funnel.csv',
@@ -270,7 +275,7 @@ export function ReportsBoard({
                   <td className={num}>{formatShare(a.approvedShare)}</td>
                   <td className={num}>{formatShare(a.editedShare)}</td>
                   <td className={num}>{formatShare(a.rejectedShare)}</td>
-                  <td className={num}>{a.hoursSaved}</td>
+                  <td className={num}>{a.hoursSaved ?? '–'}</td>
                 </tr>
               ))}
             </tbody>

@@ -31,8 +31,8 @@ export interface SourceResult {
   source: string;
   submitted: number;
   started: number;
-  /** Dollars spent in the period. */
-  spend: number;
+  /** Dollars spent in the period, or null when spend is not tracked. */
+  spend: number | null;
   /** What the spend was, e.g. "bonuses" or "seat share". */
   spendNote?: string;
 }
@@ -49,7 +49,7 @@ export function sourceRows(rows: readonly SourceResult[]): SourceRow[] {
   return rows
     .map((r) => ({
       ...r,
-      costPerStart: r.started ? r.spend / r.started : null,
+      costPerStart: r.started && r.spend !== null ? r.spend / r.started : null,
       startRate: r.submitted ? r.started / r.submitted : null,
     }))
     .sort(
@@ -64,10 +64,11 @@ export interface AgentResult {
   agent: string;
   proposals: number;
   approved: number;
-  edited: number;
+  /** Approved after a person's edit, or null when edits are not tracked. */
+  edited: number | null;
   rejected: number;
-  /** Estimated minutes a person saved, from the firm's per-task estimates. */
-  minutesSaved: number;
+  /** Estimated minutes a person saved, from the firm's per-task estimates; null when unknown. */
+  minutesSaved: number | null;
 }
 
 export interface AgentRow extends AgentResult {
@@ -76,12 +77,12 @@ export interface AgentRow extends AgentResult {
   approvedShare: number | null;
   editedShare: number | null;
   rejectedShare: number | null;
-  hoursSaved: number;
+  hoursSaved: number | null;
 }
 
 export function agentRows(rows: readonly AgentResult[]): AgentRow[] {
   return rows.map((r) => {
-    const decided = r.approved + r.edited + r.rejected;
+    const decided = r.approved + (r.edited ?? 0) + r.rejected;
     if (decided > r.proposals)
       throw new Error(`${r.agent}: more decisions (${decided}) than proposals (${r.proposals})`);
     const share = (n: number) => (decided ? n / decided : null);
@@ -89,9 +90,9 @@ export function agentRows(rows: readonly AgentResult[]): AgentRow[] {
       ...r,
       decided,
       approvedShare: share(r.approved),
-      editedShare: share(r.edited),
+      editedShare: r.edited === null ? null : share(r.edited),
       rejectedShare: share(r.rejected),
-      hoursSaved: Math.round(r.minutesSaved / 60),
+      hoursSaved: r.minutesSaved === null ? null : Math.round(r.minutesSaved / 60),
     };
   });
 }
