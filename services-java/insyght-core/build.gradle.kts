@@ -16,6 +16,8 @@ java {
 
 dependencyManagement {
     imports {
+        // Importing a BOM here replaces the one the Spring Boot plugin adds, so import it first.
+        mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
         // Spring Modulith 2.0.x is the line built for Spring Boot 4.0. Apache License 2.0.
         mavenBom("org.springframework.modulith:spring-modulith-bom:${libs.versions.spring.modulith.get()}")
     }
