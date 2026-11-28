@@ -293,6 +293,28 @@ export type DeskReport = {
   agents: { kind: string; proposals: number; approved: number; rejected: number }[];
 };
 
+/** Per-desk counts from application-service. Queue is what waits now, the rest is the window. */
+export type DeskMetrics = {
+  days: number;
+  since: string;
+  desks: {
+    userId: string;
+    submittals: number;
+    interviews: number;
+    starts: number;
+    queue: number;
+  }[];
+  /** The same candidate put forward to the same client by more than one desk, still open. */
+  duplicates: { candidateProfileId: string; clientId: string; ownerUserIds: string[] }[];
+};
+
+/** Per-desk counts from job-service: published roles now, clients added in the window. */
+export type DeskRoles = {
+  days: number;
+  since: string;
+  desks: { userId: string; roles: number; newClients: number }[];
+};
+
 export type PlacementRecord = {
   id: string;
   applicationId: string;
@@ -766,6 +788,16 @@ export function createJobocateClient(options: JobocateClientOptions) {
       desk: (days?: number) =>
         request<DeskReport>(
           `/api/v1/reports/desk${days != null ? `?days=${encodeURIComponent(String(days))}` : ''}`,
+        ),
+      /** application-service: submittals, interviews, starts and queue by desk. */
+      desks: (days?: number) =>
+        request<DeskMetrics>(
+          `/api/v1/reports/desks${days != null ? `?days=${encodeURIComponent(String(days))}` : ''}`,
+        ),
+      /** job-service: published roles and new clients by desk. */
+      deskRoles: (days?: number) =>
+        request<DeskRoles>(
+          `/api/v1/reports/desk-roles${days != null ? `?days=${encodeURIComponent(String(days))}` : ''}`,
         ),
     },
     placements: {

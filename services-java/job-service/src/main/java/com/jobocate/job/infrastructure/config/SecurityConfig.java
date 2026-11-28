@@ -36,7 +36,8 @@ public class SecurityConfig {
                                 // authenticated principal. The public marketplace
                                 // browses jobs via the search-gateway, not this
                                 // service.
-                                .requestMatchers("/api/v1/clients", "/api/v1/clients/**")
+                                .requestMatchers(
+                                        "/api/v1/clients", "/api/v1/clients/**", "/api/v1/reports/**")
                                 .hasAnyRole(
                                         Role.RECRUITER.name(),
                                         Role.HIRING_MANAGER.name(),

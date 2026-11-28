@@ -48,6 +48,8 @@ export function AgencyBoard({
   items,
   today,
   representative,
+  liveNote,
+  policyNote,
 }: {
   desks: Desk[];
   policy: PolicyRow[];
@@ -55,6 +57,10 @@ export function AgencyBoard({
   /** YYYY-MM-DD in the firm's time zone. */
   today: string;
   representative: boolean;
+  /** Shown when the desks are live, to say what is and isn't tracked. */
+  liveNote?: string;
+  /** Shown above the policy when it is still a sample. */
+  policyNote?: string;
 }) {
   const [sort, setSort] = useState<{ key: NumberKey | 'name'; dir: 'asc' | 'desc' }>({
     key: 'name',
@@ -96,6 +102,10 @@ export function AgencyBoard({
         <p role="note" className="rounded-lg bg-info-soft px-4 py-3 text-sm text-info">
           Representative data. Desk metrics and manager roles are not connected yet, so these desks
           are samples. Nothing on this page acts on a candidate.
+        </p>
+      ) : liveNote ? (
+        <p role="note" className="rounded-lg bg-muted px-4 py-3 text-sm text-muted-foreground">
+          {liveNote}
         </p>
       ) : null}
 
@@ -162,7 +172,7 @@ export function AgencyBoard({
                     <th scope="row" className="whitespace-nowrap px-3 py-2 text-left font-medium">
                       {d.name}
                     </th>
-                    <td className="px-3 py-2 text-muted-foreground">{d.focus}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{d.focus || '–'}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{d.roles}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{d.submittals}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{d.interviews}</td>
@@ -212,6 +222,11 @@ export function AgencyBoard({
             <p className="text-caption text-muted-foreground">
               Applies to every desk. Recruiters choose inside these limits on their Agents page.
             </p>
+            {policyNote ? (
+              <p role="note" className="mt-2 rounded-lg bg-info-soft px-3 py-2 text-caption text-info">
+                {policyNote}
+              </p>
+            ) : null}
           </div>
           <ul className="divide-y divide-border">
             {policy.map((p) => (
