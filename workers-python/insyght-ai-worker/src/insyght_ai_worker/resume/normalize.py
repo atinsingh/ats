@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from collections.abc import Iterable
+from itertools import pairwise
 
 _WS = re.compile(r"\s+")
 _EMAIL = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
@@ -118,7 +119,7 @@ def extract_skills(text: str, vocab: Iterable[str] = DEFAULT_SKILL_VOCAB) -> lis
     lowered = text.lower()
     words = _SKILL_WORD.findall(lowered)
     tokens: set[str] = set(words)
-    for a, b in zip(words, words[1:]):
+    for a, b in pairwise(words):
         tokens.add(f"{a} {b}")
 
     found: list[str] = []

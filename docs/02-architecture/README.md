@@ -58,8 +58,7 @@ flowchart LR
     IndexB[index-builder-service]
   end
   subgraph workers [Python workers]
-    Parser[resume-parser-worker]
-    Embed[embedding-worker]
+    AIW[insyght-ai-worker]
   end
   subgraph data [Data plane]
     PG[(PostgreSQL)]
@@ -86,10 +85,8 @@ flowchart LR
   Gateway --> OS
   Auto --> REDIS
   Ingest --> KAF
-  KAF --> Parser
-  KAF --> Embed
-  Parser --> KAF
-  Embed --> KAF
+  KAF --> AIW
+  AIW --> KAF
   Apps --> PG
   Jobs --> PG
   Cands --> PG

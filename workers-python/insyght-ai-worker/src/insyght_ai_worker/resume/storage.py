@@ -1,4 +1,4 @@
-"""S3 fetch helper for the resume-parser-worker.
+"""S3 fetch helper for the parse_resume handler.
 
 `boto3` is an optional dependency: if it isn't installed (or `JOBOCATE_S3_ENABLED=false`),
 the worker falls back to using the s3_key string as the parsed text so the rest of
@@ -11,7 +11,7 @@ import logging
 import os
 from dataclasses import dataclass
 
-log = logging.getLogger("resume-parser-worker.storage")
+log = logging.getLogger("insyght-ai-worker.resume.storage")
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class S3Settings:
     bucket: str
 
     @classmethod
-    def from_env(cls) -> "S3Settings":
+    def from_env(cls) -> S3Settings:
         enabled = os.environ.get("JOBOCATE_S3_ENABLED", "true").lower() not in ("0", "false", "no")
         return cls(
             enabled=enabled,
@@ -56,7 +56,7 @@ def fetch_object_text(settings: S3Settings, object_key: str, mime_type: str | No
         buf = io.BytesIO()
         s3.download_fileobj(settings.bucket, object_key, buf)
         return _decode_bytes(buf.getvalue(), mime_type or "")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - best effort; any S3 error falls back to filename hints
         log.warning("s3 download failed key=%s err=%s", object_key, e)
         return ""
 
@@ -71,7 +71,7 @@ def _decode_bytes(data: bytes, mime_type: str) -> str:
 
             reader = PdfReader(io.BytesIO(data))
             return "\n".join(page.extract_text() or "" for page in reader.pages)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - malformed PDFs fall back to raw text
             log.info("pdf parse fallback to raw text: %s", e)
     if mime_type in (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -82,9 +82,6 @@ def _decode_bytes(data: bytes, mime_type: str) -> str:
 
             doc = Document(io.BytesIO(data))
             return "\n".join(p.text for p in doc.paragraphs)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - malformed DOCX files fall back to raw text
             log.info("docx parse fallback to raw text: %s", e)
-    try:
-        return data.decode("utf-8", errors="ignore")
-    except Exception:
-        return ""
+    return data.decode("utf-8", errors="ignore")

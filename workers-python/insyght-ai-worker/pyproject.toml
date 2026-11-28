@@ -1,16 +1,16 @@
 [project]
-name = "resume-parser-worker"
-version = "0.2.0"
-description = "Consumes raw resume uploads, extracts structured fields, normalizes text, emits parsed artifacts (no embeddings)."
+name = "insyght-ai-worker"
+version = "0.3.0"
+description = "One worker for resume parsing, embeddings and AI artifacts. Model calls go through the AI gateway."
 requires-python = ">=3.12"
 dependencies = [
-  "pydantic>=2.10.0",
   "kafka-python>=2.0.2",
+  "httpx>=0.28.0",
   "orjson>=3.10.0",
 ]
 
 [project.optional-dependencies]
-# Optional bits that pull weight only when actually downloading from S3 / parsing PDFs.
+# Pull weight only when downloading from S3 or parsing PDF / DOCX.
 s3 = ["boto3>=1.35.0"]
 pdf = ["pypdf>=5.1.0"]
 docx = ["python-docx>=1.1.2"]

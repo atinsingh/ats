@@ -1,4 +1,4 @@
-from resume_parser_worker.kafka_worker import run
+from insyght_ai_worker.app import run
 
 if __name__ == "__main__":
     raise SystemExit(run())

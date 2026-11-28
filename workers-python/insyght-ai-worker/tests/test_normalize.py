@@ -1,4 +1,4 @@
-from resume_parser_worker.normalize import (
+from insyght_ai_worker.resume.normalize import (
     extract_email,
     extract_phone,
     extract_skills,

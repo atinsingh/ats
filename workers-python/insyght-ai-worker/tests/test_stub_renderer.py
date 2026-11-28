@@ -1,4 +1,5 @@
-from ai_artifact_worker.renderer import StubProvider, render_artifact
+from insyght_ai_worker.gateway import StubGateway
+from insyght_ai_worker.stub_renderer import render_artifact
 
 
 def test_cover_letter_includes_company_and_skills():
@@ -37,9 +38,10 @@ def test_unknown_kind_falls_back_to_generic():
     assert render_artifact("WAT", {}, {}) == "Auto-generated artifact for WAT."
 
 
-def test_stub_provider_returns_payload_with_versions():
-    provider = StubProvider()
-    artifact = provider.generate(
+def test_stub_gateway_returns_payload_with_versions():
+    provider = StubGateway()
+    artifact = provider.generate_artifact(
+        tenant_id="33333333-3333-3333-3333-333333333333",
         kind="CANDIDATE_SUMMARY",
         inputs={"candidate_name": "Linus", "skills": ["c", "kernel"]},
         context={},
