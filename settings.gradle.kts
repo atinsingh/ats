@@ -24,4 +24,5 @@ include(
     "services-java:admin-service",
     "services-java:notification-service",
     "services-java:search-orchestrator-service",
+    "services-java:insyght-core",
 )

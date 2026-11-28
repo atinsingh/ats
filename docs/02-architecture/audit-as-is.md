@@ -1,5 +1,9 @@
 # Architecture audit — as-is snapshot
 
+> **Stale as of 2026-11-10.** The code has moved well past this snapshot (outboxes, state machines,
+> resume storage and tests now exist; several new defects were found). Read
+> [`as-is-verification-2026-11.md`](./as-is-verification-2026-11.md) for the code-verified state.
+
 > **Snapshot date:** initial documentation pass. **Update this doc whenever a service crosses a stub-vs-real boundary.** Everything described here was verified by reading the code; treat it as the canonical baseline against which the to-be docs in this repo are written.
 
 ## 1. Monorepo layout
@@ -27,8 +31,7 @@ services-go/                   Go 1.23
   index-builder-service/       no HTTP    — Kafka consumer (no-op pipeline)
   reindex-tool/                CLI        — flag parsing only, no work yet
 workers-python/                Python 3.12
-  resume-parser-worker/        Kafka consumer/producer — emits deterministic stub RESUME_PARSED
-  embedding-worker/            Kafka consumer/producer — emits deterministic 128-dim pseudo-vector
+  insyght-ai-worker/           Kafka consumer/producer — parse_resume, embed, generate_artifact handlers (stub AI gateway)
 packages/
   shared-contracts/            openapi/recruiter-search-gateway.yaml, schemas/job-index-document.schema.json, kafka/topics.yaml
   api-sdk/                     hand-written fetch client (jobs.listOpen, jobs.get, tenants.me, searchJobs)
@@ -94,12 +97,13 @@ i.e. Spring Security is configured but no role-based authorization is enforced y
 
 ## 4. Python workers
 
-Both workers share the same shape: kafka-python consumer + producer loop, JSON payloads, deterministic stub processing.
+One worker since IATS-151: `workers-python/insyght-ai-worker`, one kafka-python consumer thread per handler. Every model call goes through `AiGateway`; the only implementation is the deterministic `StubGateway` until IATS-104.
 
-- `resume-parser-worker`: consumes `jobocate.resume.raw` group `jobocate-resume-parser`, emits `RESUME_PARSED` to `jobocate.resume.parsed`. **Does not read S3.** "Parsing" is filename → headline guess + a fixed summary string.
-- `embedding-worker`: consumes `jobocate.embedding.request`, emits `EMBEDDING_READY` to `jobocate.embedding.ready` with a SHA256-seeded 128-dim `pseudo-dev` vector. **No real model call.**
+- `parse_resume`: consumes `jobocate.resume.raw` group `jobocate-resume-parser`, emits `RESUME_PARSED` to `jobocate.resume.parsed`. Reads S3 when `boto3` is installed and the key is under `tenants/{tenant_id}/`; otherwise falls back to filename hints. Regex extraction, no model call.
+- `embed`: consumes `jobocate.embedding.request` group `jobocate-embedding-worker`, emits `EMBEDDING_READY` to `jobocate.embedding.ready` with a SHA256-seeded 128-dim `pseudo-dev` vector. **No real model call.**
+- `generate_artifact`: consumes `jobocate.ai.artifact.events` group `jobocate-ai-artifact-worker` and POSTs the stub result to application-service `/internal/v1/ai-artifacts/{id}/result`.
 
-Neither worker has tests, despite `pytest` being declared as a dev dep.
+Unit tests drive the consume loop with fake Kafka clients (`ruff check . && PYTHONPATH=src pytest`).
 
 ## 5. Next.js apps
 

@@ -1,0 +1,6 @@
+# Local development only. These are the same public placeholder values the other services use;
+# never use this profile in a shared environment.
+jobocate:
+  security:
+    jwt-secret: jobocate-local-jwt-secret-change-me!!!
+  internal-token: jobocate-internal-dev-token

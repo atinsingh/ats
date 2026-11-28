@@ -13,11 +13,11 @@
 #                          notification, analytics, search-orchestrator
 #                          (candidate index when consent given).
 #   - resume.raw         → emitted by candidate-service after upload finalize.
-#                          Consumed by resume-parser-worker.
-#   - resume.parsed      → emitted by resume-parser-worker. Consumed by
-#                          candidate-service (review queue) + embedding-worker.
+#                          Consumed by insyght-ai-worker (parse_resume).
+#   - resume.parsed      → emitted by insyght-ai-worker (parse_resume). Consumed by
+#                          candidate-service (review queue).
 #   - embedding.request  → request from any service that wants an embedding.
-#   - embedding.ready    → result topic from embedding-worker.
+#   - embedding.ready    → result topic from insyght-ai-worker (embed).
 #   - notification.events → emitted by notification-service after delivery
 #                          attempts (success/failure) for analytics.
 #   - analytics.events   → catch-all telemetry stream consumed by
@@ -64,7 +64,7 @@ producers:
     - service: candidate-service
       mechanism: outbox
   jobocate.resume.parsed:
-    - service: resume-parser-worker
+    - service: insyght-ai-worker
       mechanism: direct
   jobocate.embedding.request:
     - service: candidate-service
@@ -72,7 +72,7 @@ producers:
     - service: job-service
       mechanism: outbox
   jobocate.embedding.ready:
-    - service: embedding-worker
+    - service: insyght-ai-worker
       mechanism: direct
   jobocate.notification.events:
     - service: notification-service
@@ -98,16 +98,17 @@ consumers:
       group: jobocate-analytics-collector
       action: persist_event
   jobocate.resume.raw:
-    - service: resume-parser-worker
+    - service: insyght-ai-worker
       group: jobocate-resume-parser
       action: parse_extract_persist
   jobocate.resume.parsed:
     - service: candidate-service
       group: jobocate-candidate-resume-projector
       action: update_candidate_profile_review_queue
-    - service: embedding-worker
+  jobocate.embedding.request:
+    - service: insyght-ai-worker
       group: jobocate-embedding-worker
-      action: enqueue_embedding_request
+      action: embed_text
   jobocate.embedding.ready:
     - service: index-builder-service
       group: jobocate-index-builder

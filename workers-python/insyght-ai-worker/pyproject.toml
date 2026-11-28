@@ -1,0 +1,24 @@
+[project]
+name = "insyght-ai-worker"
+version = "0.3.0"
+description = "One worker for resume parsing, embeddings and AI artifacts. Model calls go through the AI gateway."
+requires-python = ">=3.12"
+dependencies = [
+  "kafka-python>=2.0.2",
+  "httpx>=0.28.0",
+  "orjson>=3.10.0",
+]
+
+[project.optional-dependencies]
+# Pull weight only when downloading from S3 or parsing PDF / DOCX.
+s3 = ["boto3>=1.35.0"]
+pdf = ["pypdf>=5.1.0"]
+docx = ["python-docx>=1.1.2"]
+dev = ["pytest>=8.3.0", "ruff>=0.8.0"]
+
+[build-system]
+requires = ["setuptools>=75.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

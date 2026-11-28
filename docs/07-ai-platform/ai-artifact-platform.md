@@ -2,7 +2,7 @@
 
 End-to-end spec for AI-generated content on the platform. Implementation
 landed under `services-java/application-service` (artifacts, REST + outbox)
-and `workers-python/ai-artifact-worker` (consumer + provider plug-in).
+and `workers-python/insyght-ai-worker` (`generate_artifact` handler + AI gateway).
 
 ## Kinds
 
@@ -87,15 +87,14 @@ Every event payload includes `event_id` (UUID), `artifact_id`, `tenant_id`,
 
 ## Worker
 
-`workers-python/ai-artifact-worker` consumes
-`jobocate.ai.artifact.events`, picks an `AiProvider` based on the
-`AI_ARTIFACT_PROVIDER` env (`stub` by default — deterministic, offline, no
-keys required), and POSTs back to `application-service`. The worker uses
-the event's `event_id` as `idempotencyKey` so Kafka redelivery is safe.
+The `generate_artifact` handler of `workers-python/insyght-ai-worker` consumes
+`jobocate.ai.artifact.events`, calls `AiGateway.generate_artifact` (the
+deterministic `StubGateway` by default, selected with `AI_GATEWAY`; no keys
+required), and POSTs back to `application-service`. The worker uses the
+event's `event_id` as `idempotencyKey` so Kafka redelivery is safe.
 
-Provider integrations are intentionally optional extras
-(`pip install ai-artifact-worker[openai]`) so deployments can pick a
-provider without forcing the dependency on every environment.
+Real model providers plug in behind the AI gateway (IATS-104), not in the
+handler.
 
 ## Storage
 
