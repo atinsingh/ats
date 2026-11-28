@@ -137,8 +137,10 @@ export interface Match {
   title: string;
   /** YYYY-MM-DD, or empty when available now. */
   available: string;
-  /** YYYY-MM-DD of the last contact, or empty for never. */
-  lastContact: string;
+  /** Shown instead of the date when set, e.g. "Not looking" or "Not stated". */
+  availableLabel?: string;
+  /** YYYY-MM-DD of the last contact, empty for never, or null when contact is not tracked. */
+  lastContact: string | null;
   /** Channels the person agreed to be contacted on. Empty means none recorded. */
   consent: string[];
   shortlisted?: boolean;
