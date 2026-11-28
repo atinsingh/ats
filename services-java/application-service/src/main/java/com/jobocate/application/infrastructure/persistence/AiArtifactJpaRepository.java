@@ -20,4 +20,7 @@ public interface AiArtifactJpaRepository extends JpaRepository<AiArtifactEntity,
 
     List<AiArtifactEntity> findByTenantIdAndKindOrderByCreatedAtDesc(
             UUID tenantId, AiArtifactKind kind, Pageable page);
+
+    List<AiArtifactEntity> findByTenantIdAndStatusOrderByCreatedAtAsc(
+            UUID tenantId, AiArtifactStatus status, Pageable page);
 }

@@ -5,6 +5,8 @@ export type JobocateClientOptions = {
   getTenantId?: () => string | undefined | Promise<string | undefined>;
   /** When set, sends `X-Jobocate-Candidate-Id` (local dev shim until JWT-derived identity lands). */
   getCandidateId?: () => string | undefined | Promise<string | undefined>;
+  /** When set, sends `X-Jobocate-User-Id` so the service records who acted (local dev shim). */
+  getUserId?: () => string | undefined | Promise<string | undefined>;
 };
 
 export type SearchGatewayClientOptions = {
@@ -81,6 +83,29 @@ export type CandidateProfile = {
   updatedAt?: string;
 };
 
+/** Row returned by the tenant-scoped `GET /api/v1/candidates` list. */
+/** Recruiter-side candidate detail, as candidate-service returns it. */
+export type CandidateDetail = {
+  id: string;
+  email: string;
+  fullName: string;
+  headline?: string | null;
+  summary?: string | null;
+  locationCity?: string | null;
+  locationRegion?: string | null;
+  locationCountry?: string | null;
+  availability?: string | null;
+  visibility?: string | null;
+  consentSearchable: boolean;
+};
+
+export type CandidateSummary = {
+  id: string;
+  email: string;
+  fullName: string;
+  headline?: string | null;
+};
+
 export type CandidateProfileInput = Partial<
   Pick<
     CandidateProfile,
@@ -141,6 +166,98 @@ export type ResumeParsedFields = {
   parserVersion?: string | null;
   parsedAt?: string | null;
   reviewStatus: 'PENDING' | 'PROPOSED' | 'APPLIED' | 'REJECTED';
+};
+
+export type ClientStatus = 'ACTIVE' | 'DORMANT' | 'PROSPECT';
+
+/** A client company (job-service). Jobs point to it through organizationId. */
+export type ClientRecord = {
+  id: string;
+  name: string;
+  status: ClientStatus;
+  channel: string;
+  ownerUserId?: string | null;
+  lastContactAt?: string | null;
+  msaEndsOn?: string | null;
+  /** Published jobs whose organizationId is this client. */
+  openJobs: number;
+  createdAt: string;
+};
+
+export type ClientInput = {
+  name?: string;
+  status?: ClientStatus;
+  channel?: string;
+  ownerUserId?: string;
+  lastContactAt?: string;
+  /** ISO date, e.g. 2027-03-31. */
+  msaEndsOn?: string;
+};
+
+export type SubmittalStatus =
+  | 'AWAITING_APPROVAL'
+  | 'CLIENT_REVIEWING'
+  | 'INTERVIEW'
+  | 'OFFER'
+  | 'CLIENT_PASSED'
+  | 'WITHDRAWN';
+
+/** A candidate put forward to a client (application-service). Approving records a person sent it. */
+export type SubmittalRecord = {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  candidateProfileId: string;
+  clientId?: string | null;
+  channel: string;
+  status: SubmittalStatus;
+  /** Dollars per hour. */
+  billRate?: number | null;
+  ownerUserId?: string | null;
+  approvedByUserId?: string | null;
+  submittedAt?: string | null;
+  lastClientActivityAt?: string | null;
+  latestNote?: string | null;
+  createdAt: string;
+};
+
+export type CreateSubmittalInput = {
+  applicationId: string;
+  clientId?: string;
+  channel?: string;
+  billRate?: number;
+  ownerUserId?: string;
+};
+
+export type InterviewType = 'PHONE' | 'VIDEO' | 'ONSITE' | 'TECHNICAL' | 'PANEL';
+export type InterviewStatus = 'SCHEDULED' | 'RESCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
+export type InterviewRecord = {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  type: InterviewType;
+  status: InterviewStatus;
+  scheduledStart: string;
+  scheduledEnd: string;
+  location?: string | null;
+  meetingUrl?: string | null;
+  cancellationReason?: string | null;
+  createdAt?: string | null;
+};
+
+export type InterviewRecommendation = 'STRONG_HIRE' | 'HIRE' | 'NO_HIRE' | 'STRONG_NO_HIRE';
+
+export type InterviewFeedback = {
+  id: string;
+  interviewId: string;
+  applicationId: string;
+  interviewerUserId: string;
+  overallScore?: number | null;
+  recommendation?: InterviewRecommendation | null;
+  scores: { area: string; score: number; note?: string | null }[];
+  summary?: string | null;
+  submittedAt: string;
 };
 
 export type ApplicationSummary = {
@@ -328,6 +445,10 @@ export function createJobocateClient(options: JobocateClientOptions) {
     if (candidateId) {
       headers.set('X-Jobocate-Candidate-Id', candidateId);
     }
+    const userId = await options.getUserId?.();
+    if (userId) {
+      headers.set('X-Jobocate-User-Id', userId);
+    }
 
     const res = await fetch(`${baseUrl}${path}`, { ...init, headers });
     const text = await res.text();
@@ -339,7 +460,7 @@ export function createJobocateClient(options: JobocateClientOptions) {
 
   return {
     jobs: {
-      listOpen: () => request<Job[]>(`/api/v1/jobs`),
+      listOpen: () => request<Job[]>(`/api/v1/jobs?status=PUBLISHED`),
       get: (id: string) => request<Job>(`/api/v1/jobs/${encodeURIComponent(id)}`),
       listForRecruiter: (params?: { status?: Job['status']; limit?: number; offset?: number }) => {
         const qs = new URLSearchParams();
@@ -372,32 +493,32 @@ export function createJobocateClient(options: JobocateClientOptions) {
       me: () => request<unknown>(`/api/v1/tenants/me`),
     },
     recruiterApplications: {
-      listForJob: (jobId: string) =>
-        request<ApplicationDetail[]>(
-          `/api/v1/jobs/${encodeURIComponent(jobId)}/applications`,
-        ),
+      /** Newest first. `limit` is capped at 500 by the service. */
+      listForJob: (jobId: string, opts: { status?: string; limit?: number } = {}) => {
+        const q = new URLSearchParams();
+        if (opts.status) q.set('status', opts.status);
+        if (opts.limit) q.set('limit', String(opts.limit));
+        const qs = q.toString();
+        return request<ApplicationDetail[]>(
+          `/api/v1/jobs/${encodeURIComponent(jobId)}/applications${qs ? `?${qs}` : ''}`,
+        );
+      },
       get: (id: string) =>
         request<ApplicationDetail>(`/api/v1/applications/${encodeURIComponent(id)}`),
-      transition: (
-        id: string,
-        body: { status: string; rejectionReason?: string },
-      ) =>
-        request<ApplicationDetail>(
-          `/api/v1/applications/${encodeURIComponent(id)}/status`,
-          { method: 'POST', body: JSON.stringify(body) },
-        ),
+      transition: (id: string, body: { to: string; rejectionReason?: string }) =>
+        request<ApplicationDetail>(`/api/v1/applications/${encodeURIComponent(id)}/status`, {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }),
       timeline: (id: string) =>
-        request<TimelineEntry[]>(
-          `/api/v1/applications/${encodeURIComponent(id)}/timeline`,
-        ),
+        request<TimelineEntry[]>(`/api/v1/applications/${encodeURIComponent(id)}/timeline`),
     },
     recruiterCandidates: {
-      get: (id: string) =>
-        request<CandidateProfile>(`/api/v1/candidates/${encodeURIComponent(id)}`),
+      /** The caller's tenant candidates, newest first. Tenant comes from the auth header. */
+      list: () => request<CandidateSummary[]>(`/api/v1/candidates`),
+      get: (id: string) => request<CandidateDetail>(`/api/v1/candidates/${encodeURIComponent(id)}`),
       resumes: (id: string) =>
-        request<Resume[]>(
-          `/api/v1/candidates/${encodeURIComponent(id)}/resumes`,
-        ),
+        request<Resume[]>(`/api/v1/candidates/${encodeURIComponent(id)}/resumes`),
     },
     candidate: {
       me: () => request<CandidateProfile>(`/api/v1/candidates/me`),
@@ -421,10 +542,10 @@ export function createJobocateClient(options: JobocateClientOptions) {
           }),
         }),
       finalize: (resumeId: string, body?: { versionLabel?: string; setDefault?: boolean }) =>
-        request<Resume>(
-          `/api/v1/me/resumes/${encodeURIComponent(resumeId)}/finalize`,
-          { method: 'POST', body: JSON.stringify(body ?? {}) },
-        ),
+        request<Resume>(`/api/v1/me/resumes/${encodeURIComponent(resumeId)}/finalize`, {
+          method: 'POST',
+          body: JSON.stringify(body ?? {}),
+        }),
       parsedFields: (resumeId: string) =>
         request<ResumeParsedFields>(
           `/api/v1/me/resumes/${encodeURIComponent(resumeId)}/parsed-fields`,
@@ -435,10 +556,9 @@ export function createJobocateClient(options: JobocateClientOptions) {
           { method: 'POST' },
         ),
       rejectParsedFields: (resumeId: string) =>
-        request<void>(
-          `/api/v1/me/resumes/${encodeURIComponent(resumeId)}/parsed-fields/reject`,
-          { method: 'POST' },
-        ),
+        request<void>(`/api/v1/me/resumes/${encodeURIComponent(resumeId)}/parsed-fields/reject`, {
+          method: 'POST',
+        }),
       downloadUrl: (resumeId: string) =>
         request<{ url: string; expiresAt: string }>(
           `/api/v1/me/resumes/${encodeURIComponent(resumeId)}/download-url`,
@@ -458,9 +578,7 @@ export function createJobocateClient(options: JobocateClientOptions) {
       }) =>
         request<ApplicationSummary>(`/api/v1/applications`, {
           method: 'POST',
-          headers: input.idempotencyKey
-            ? { 'Idempotency-Key': input.idempotencyKey }
-            : undefined,
+          headers: input.idempotencyKey ? { 'Idempotency-Key': input.idempotencyKey } : undefined,
           body: JSON.stringify({
             jobId: input.jobId,
             resumeIdUsed: input.resumeId,
@@ -485,13 +603,8 @@ export function createJobocateClient(options: JobocateClientOptions) {
           body: JSON.stringify(body),
         });
       },
-      get: (id: string) =>
-        request<AiArtifact>(`/api/v1/ai-artifacts/${encodeURIComponent(id)}`),
-      listForSubject: (
-        subjectType: AiArtifactSubjectType,
-        subjectId: string,
-        limit = 50,
-      ) => {
+      get: (id: string) => request<AiArtifact>(`/api/v1/ai-artifacts/${encodeURIComponent(id)}`),
+      listForSubject: (subjectType: AiArtifactSubjectType, subjectId: string, limit = 50) => {
         const qs = new URLSearchParams({
           subject_type: subjectType,
           subject_id: subjectId,
@@ -506,6 +619,9 @@ export function createJobocateClient(options: JobocateClientOptions) {
         });
         return request<AiArtifact[]>(`/api/v1/ai-artifacts?${qs.toString()}`);
       },
+      /** Drafts waiting for a person to review, oldest first. Recruiter roles only. */
+      reviewQueue: (limit = 50) =>
+        request<AiArtifact[]>(`/api/v1/ai-artifacts/review-queue?limit=${encodeURIComponent(limit)}`),
       approve: (id: string) =>
         request<AiArtifact>(`/api/v1/ai-artifacts/${encodeURIComponent(id)}/approve`, {
           method: 'POST',
@@ -520,6 +636,104 @@ export function createJobocateClient(options: JobocateClientOptions) {
           method: 'POST',
         }),
     },
+    clients: {
+      /** Clients by name, each with its count of open jobs. Recruiter roles only. */
+      list: (params?: { status?: ClientStatus; limit?: number }) => {
+        const qs = new URLSearchParams();
+        if (params?.status) qs.set('status', params.status);
+        if (params?.limit != null) qs.set('limit', String(params.limit));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return request<ClientRecord[]>(`/api/v1/clients${suffix}`);
+      },
+      get: (id: string) => request<ClientRecord>(`/api/v1/clients/${encodeURIComponent(id)}`),
+      create: (input: ClientInput & { name: string }) =>
+        request<ClientRecord>(`/api/v1/clients`, { method: 'POST', body: JSON.stringify(input) }),
+      update: (id: string, input: ClientInput) =>
+        request<ClientRecord>(`/api/v1/clients/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify(input),
+        }),
+    },
+    submittals: {
+      /** Newest first. Recruiter roles only. */
+      list: (params?: { status?: SubmittalStatus; limit?: number }) => {
+        const qs = new URLSearchParams();
+        if (params?.status) qs.set('status', params.status);
+        if (params?.limit != null) qs.set('limit', String(params.limit));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return request<SubmittalRecord[]>(`/api/v1/submittals${suffix}`);
+      },
+      get: (id: string) =>
+        request<SubmittalRecord>(`/api/v1/submittals/${encodeURIComponent(id)}`),
+      /** Creates it waiting for approval. Nothing goes to the client. */
+      create: (input: CreateSubmittalInput) =>
+        request<SubmittalRecord>(`/api/v1/submittals`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      /** A person approves it; needs getUserId. Records that they sent it to the client. */
+      approve: (id: string) =>
+        request<SubmittalRecord>(`/api/v1/submittals/${encodeURIComponent(id)}/approve`, {
+          method: 'POST',
+        }),
+      clientUpdate: (id: string, input: { status?: SubmittalStatus; note?: string }) =>
+        request<SubmittalRecord>(`/api/v1/submittals/${encodeURIComponent(id)}/client-update`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      withdraw: (id: string, reason?: string) =>
+        request<SubmittalRecord>(`/api/v1/submittals/${encodeURIComponent(id)}/withdraw`, {
+          method: 'POST',
+          body: JSON.stringify({ reason }),
+        }),
+    },
+    interviews: {
+      /** Scheduled and rescheduled interviews in a window, soonest first. Recruiter roles only. */
+      upcoming: (params?: { from?: string; to?: string; limit?: number }) => {
+        const qs = new URLSearchParams();
+        if (params?.from) qs.set('from', params.from);
+        if (params?.to) qs.set('to', params.to);
+        if (params?.limit != null) qs.set('limit', String(params.limit));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return request<InterviewRecord[]>(`/api/v1/interviews${suffix}`);
+      },
+      forApplication: (applicationId: string) =>
+        request<InterviewRecord[]>(
+          `/api/v1/interviews?applicationId=${encodeURIComponent(applicationId)}`,
+        ),
+      schedule: (input: {
+        applicationId: string;
+        type: InterviewType;
+        scheduledStart: string;
+        scheduledEnd: string;
+        location?: string;
+        meetingUrl?: string;
+      }) =>
+        request<InterviewRecord>(`/api/v1/interviews`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      cancel: (id: string, reason: string) =>
+        request<InterviewRecord>(`/api/v1/interviews/${encodeURIComponent(id)}/cancel`, {
+          method: 'POST',
+          body: JSON.stringify({ reason }),
+        }),
+      feedback: (id: string) =>
+        request<InterviewFeedback[]>(`/api/v1/interviews/${encodeURIComponent(id)}/feedback`),
+      submitFeedback: (
+        id: string,
+        input: {
+          overallScore?: number;
+          recommendation?: InterviewRecommendation;
+          scores?: { area: string; score: number; note?: string }[];
+          summary?: string;
+        },
+      ) =>
+        request<InterviewFeedback>(`/api/v1/interviews/${encodeURIComponent(id)}/feedback`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+    },
     savedJobs: {
       mine: () => request<SavedJob[]>(`/api/v1/candidates/me/saved-jobs`),
       save: (jobId: string) =>
@@ -528,10 +742,9 @@ export function createJobocateClient(options: JobocateClientOptions) {
           body: JSON.stringify({ jobId }),
         }),
       remove: (savedId: string) =>
-        request<void>(
-          `/api/v1/candidates/me/saved-jobs/${encodeURIComponent(savedId)}`,
-          { method: 'DELETE' },
-        ),
+        request<void>(`/api/v1/candidates/me/saved-jobs/${encodeURIComponent(savedId)}`, {
+          method: 'DELETE',
+        }),
     },
   };
 }

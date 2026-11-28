@@ -62,7 +62,7 @@ export function NewJobForm({ apiBase, tenantId }: { apiBase: string; tenantId: s
 
   return (
     <form
-      className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm"
       onSubmit={onSubmit}
     >
       <Field label="Title" name="title" required placeholder="Senior Backend Engineer" />
@@ -71,7 +71,12 @@ export function NewJobForm({ apiBase, tenantId }: { apiBase: string; tenantId: s
         <Field label="Currency" name="currencyCode" placeholder="USD" maxLength={3} />
       </div>
 
-      <Textarea label="Description" name="description" rows={6} placeholder="What the role does, who it's for..." />
+      <Textarea
+        label="Description"
+        name="description"
+        rows={6}
+        placeholder="What the role does, who it's for..."
+      />
       <Textarea label="Responsibilities" name="responsibilities" rows={4} />
       <Textarea label="Qualifications" name="qualifications" rows={4} />
 
@@ -118,7 +123,10 @@ export function NewJobForm({ apiBase, tenantId }: { apiBase: string; tenantId: s
       <Field label="Skills (comma separated)" name="skills" placeholder="java,spring,postgres" />
 
       {status.kind === 'error' ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+        <p
+          className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          role="alert"
+        >
           {status.message}
         </p>
       ) : null}
@@ -128,7 +136,7 @@ export function NewJobForm({ apiBase, tenantId }: { apiBase: string; tenantId: s
           type="submit"
           disabled={status.kind === 'saving'}
           onClick={() => setShouldPublish(false)}
-          className="rounded-md bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+          className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
         >
           {status.kind === 'saving' && !shouldPublish ? 'Saving…' : 'Save draft'}
         </button>
@@ -136,7 +144,7 @@ export function NewJobForm({ apiBase, tenantId }: { apiBase: string; tenantId: s
           type="submit"
           disabled={status.kind === 'saving'}
           onClick={() => setShouldPublish(true)}
-          className="rounded-md border border-emerald-300 bg-emerald-50 px-5 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
+          className="rounded-md border border-success/40 bg-success-soft px-5 py-2 text-sm font-semibold text-success hover:bg-success-soft"
         >
           {status.kind === 'saving' && shouldPublish ? 'Publishing…' : 'Save and publish'}
         </button>
@@ -166,7 +174,10 @@ function numberOrUndef(data: FormData, name: string): number | undefined {
 function stringListOrUndef(data: FormData, name: string): string[] | undefined {
   const v = (data.get(name) ?? '').toString().trim();
   if (!v) return undefined;
-  const list = v.split(',').map((s) => s.trim()).filter(Boolean);
+  const list = v
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   return list.length ? list : undefined;
 }
 
@@ -187,9 +198,9 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-slate-700">
+      <span className="font-medium text-foreground">
         {label}
-        {req ? <span className="text-rose-600"> *</span> : null}
+        {req ? <span className="text-danger"> *</span> : null}
       </span>
       <input
         name={name}
@@ -197,7 +208,7 @@ function Field({
         placeholder={placeholder}
         inputMode={inputMode}
         maxLength={maxLength}
-        className="rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+        className="rounded-md border border-input bg-card px-3 py-2 shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
       />
     </label>
   );
@@ -216,12 +227,12 @@ function Textarea({
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-slate-700">{label}</span>
+      <span className="font-medium text-foreground">{label}</span>
       <textarea
         name={name}
         rows={rows ?? 4}
         placeholder={placeholder}
-        className="rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+        className="rounded-md border border-input bg-card px-3 py-2 shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
       />
     </label>
   );
@@ -238,10 +249,10 @@ function Select({
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-slate-700">{label}</span>
+      <span className="font-medium text-foreground">{label}</span>
       <select
         name={name}
-        className="rounded-md border border-slate-300 bg-white px-3 py-2 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+        className="rounded-md border border-input bg-card px-3 py-2 shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
       >
         {options.map(([v, l]) => (
           <option key={`${name}-${v}`} value={v}>

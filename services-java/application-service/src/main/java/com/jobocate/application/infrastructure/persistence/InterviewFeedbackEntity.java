@@ -16,7 +16,7 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/** Post-MVP placeholder. */
+/** One interviewer scorecard for an interview. */
 @Entity
 @Access(AccessType.FIELD)
 @Table(name = "interview_feedback")
@@ -68,7 +68,64 @@ public class InterviewFeedbackEntity {
 
     public InterviewFeedbackEntity() {}
 
+    public InterviewFeedbackEntity(
+            UUID id,
+            UUID interviewId,
+            UUID applicationId,
+            UUID tenantId,
+            UUID interviewerUserId,
+            Short overallScore,
+            Recommendation recommendation,
+            String structured,
+            String summary) {
+        this.id = id;
+        this.interviewId = interviewId;
+        this.applicationId = applicationId;
+        this.tenantId = tenantId;
+        this.interviewerUserId = interviewerUserId;
+        this.overallScore = overallScore;
+        this.recommendation = recommendation;
+        this.structured = structured == null ? "{}" : structured;
+        this.summary = summary;
+    }
+
     public UUID getId() {
         return id;
+    }
+
+    public UUID getInterviewId() {
+        return interviewId;
+    }
+
+    public UUID getApplicationId() {
+        return applicationId;
+    }
+
+    public UUID getTenantId() {
+        return tenantId;
+    }
+
+    public UUID getInterviewerUserId() {
+        return interviewerUserId;
+    }
+
+    public Short getOverallScore() {
+        return overallScore;
+    }
+
+    public Recommendation getRecommendation() {
+        return recommendation;
+    }
+
+    public String getStructured() {
+        return structured;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public Instant getSubmittedAt() {
+        return submittedAt;
     }
 }

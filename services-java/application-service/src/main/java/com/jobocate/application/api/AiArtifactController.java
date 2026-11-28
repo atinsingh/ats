@@ -65,6 +65,13 @@ public class AiArtifactController {
         return ArtifactResponse.from(created);
     }
 
+    /** Recruiter roles only; see SecurityConfig. Declared before /{id} for readability. */
+    @GetMapping("/review-queue")
+    public List<ArtifactResponse> reviewQueue(
+            @RequestParam(value = "limit", defaultValue = "50") int limit) {
+        return service.listReviewQueue(limit).stream().map(ArtifactResponse::from).toList();
+    }
+
     @GetMapping("/{id}")
     public ArtifactResponse get(@PathVariable("id") UUID id) {
         return ArtifactResponse.from(service.get(id));

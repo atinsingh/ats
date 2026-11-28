@@ -15,4 +15,6 @@ interface SpringDataJobRepository extends JpaRepository<JobEntity, UUID> {
 
     List<JobEntity> findByTenantIdAndStatusOrderByCreatedAtDesc(
             UUID tenantId, JobStatus status, Pageable pageable);
+
+    List<JobEntity> findByTenantIdOrderByCreatedAtDesc(UUID tenantId, Pageable pageable);
 }

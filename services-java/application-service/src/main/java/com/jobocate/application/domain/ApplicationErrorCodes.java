@@ -14,6 +14,11 @@ public final class ApplicationErrorCodes {
     public static final String CANDIDATE_NOT_FOUND = "CANDIDATE_NOT_FOUND";
     public static final String FORBIDDEN_TENANT_SCOPE = "FORBIDDEN_TENANT_SCOPE";
 
+    public static final String INTERVIEW_NOT_FOUND = "INTERVIEW_NOT_FOUND";
+    public static final String INTERVIEW_INVALID_STATE = "INTERVIEW_INVALID_STATE";
+    public static final String SUBMITTAL_NOT_FOUND = "SUBMITTAL_NOT_FOUND";
+    public static final String SUBMITTAL_DUPLICATE = "SUBMITTAL_DUPLICATE";
+    public static final String SUBMITTAL_INVALID_STATE = "SUBMITTAL_INVALID_STATE";
     public static final String AI_ARTIFACT_NOT_FOUND = "AI_ARTIFACT_NOT_FOUND";
     public static final String AI_ARTIFACT_INVALID_STATE = "AI_ARTIFACT_INVALID_STATE";
     public static final String AI_ARTIFACT_NOT_REVIEWABLE = "AI_ARTIFACT_NOT_REVIEWABLE";

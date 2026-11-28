@@ -265,6 +265,17 @@ public class ApplicationService {
         return applications.findByTenantIdOrderByCreatedAtDesc(TenantContext.requireTenant());
     }
 
+    /** The tenant's applications for one job, newest first, optionally in one status. */
+    @Transactional(readOnly = true)
+    public List<ApplicationEntity> listForJob(UUID jobId, ApplicationStatus status, int limit) {
+        UUID tenant = TenantContext.requireTenant();
+        PageRequest page = PageRequest.of(0, limit);
+        return status == null
+                ? applications.findByTenantIdAndJobIdOrderByCreatedAtDesc(tenant, jobId, page)
+                : applications.findByTenantIdAndJobIdAndStatusOrderByCreatedAtDesc(
+                        tenant, jobId, status, page);
+    }
+
     @Transactional(readOnly = true)
     public List<ApplicationTimelineEntryEntity> timeline(UUID applicationId, int limit) {
         UUID tenant = TenantContext.requireTenant();

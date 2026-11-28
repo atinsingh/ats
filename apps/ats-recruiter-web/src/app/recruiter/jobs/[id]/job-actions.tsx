@@ -4,7 +4,10 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { JobocateHttpError, createJobocateClient } from '@jobocate/api-sdk';
 
-type Status = { kind: 'idle' } | { kind: 'busy'; verb: string } | { kind: 'error'; message: string };
+type Status =
+  | { kind: 'idle' }
+  | { kind: 'busy'; verb: string }
+  | { kind: 'error'; message: string };
 
 export function JobActions({
   apiBase,
@@ -39,10 +42,13 @@ export function JobActions({
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="space-y-3 rounded-xl border border-border bg-card p-5 shadow-sm">
       <h2 className="text-base font-semibold">Actions</h2>
       {s.kind === 'error' ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+        <p
+          className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          role="alert"
+        >
           {s.message}
         </p>
       ) : null}
@@ -52,7 +58,7 @@ export function JobActions({
             type="button"
             disabled={s.kind === 'busy'}
             onClick={() => run('publish', () => client.jobs.publish(jobId))}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
           >
             {s.kind === 'busy' && s.verb === 'publish' ? 'Publishing…' : 'Publish'}
           </button>
@@ -62,7 +68,7 @@ export function JobActions({
             type="button"
             disabled={s.kind === 'busy'}
             onClick={() => run('unpublish', () => client.jobs.unpublish(jobId))}
-            className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-60"
           >
             {s.kind === 'busy' && s.verb === 'unpublish' ? 'Working…' : 'Unpublish'}
           </button>
@@ -76,7 +82,7 @@ export function JobActions({
                 void run('close', () => client.jobs.close(jobId));
               }
             }}
-            className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-60"
           >
             {s.kind === 'busy' && s.verb === 'close' ? 'Closing…' : 'Close'}
           </button>
@@ -92,11 +98,12 @@ export function JobActions({
             } catch (e) {
               setS({
                 kind: 'error',
-                message: e instanceof JobocateHttpError ? e.body || e.message : (e as Error).message,
+                message:
+                  e instanceof JobocateHttpError ? e.body || e.message : (e as Error).message,
               });
             }
           }}
-          className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          className="rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-60"
         >
           {s.kind === 'busy' && s.verb === 'clone' ? 'Cloning…' : 'Clone'}
         </button>

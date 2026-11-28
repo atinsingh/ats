@@ -51,10 +51,13 @@ public class JpaJobRepositoryAdapter implements JobRepository {
     @Transactional(readOnly = true)
     public List<Job> searchByTenant(UUID tenantId, JobStatus status, int limit, int offset) {
         int safeLimit = Math.max(1, Math.min(limit, 100));
-        return delegate
-                .findByTenantIdAndStatusOrderByCreatedAtDesc(
-                        tenantId, status, PageRequest.of(offset / safeLimit, safeLimit))
-                .stream()
+        PageRequest page = PageRequest.of(Math.max(0, offset) / safeLimit, safeLimit);
+        List<JobEntity> rows =
+                status == null
+                        ? delegate.findByTenantIdOrderByCreatedAtDesc(tenantId, page)
+                        : delegate.findByTenantIdAndStatusOrderByCreatedAtDesc(
+                                tenantId, status, page);
+        return rows.stream()
                 .map(e -> e.toDomain(List.of()))
                 .toList();
     }

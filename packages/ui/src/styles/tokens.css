@@ -1,0 +1,124 @@
+/* Insyght design tokens. Generated from src/tokens.ts by scripts/build-tokens.ts; do not edit. */
+:root {
+  --background: 240 240 242;
+  --foreground: 24 24 27;
+  --card: 253 253 253;
+  --card-foreground: 24 24 27;
+  --popover: 253 253 253;
+  --popover-foreground: 24 24 27;
+  --muted: 247 247 248;
+  --muted-foreground: 82 82 91;
+  --border: 228 228 231;
+  --input: 113 113 122;
+  --ring: 79 70 229;
+  --primary: 24 24 27;
+  --primary-foreground: 247 247 248;
+  --primary-hover: 63 63 70;
+  --secondary: 240 240 242;
+  --secondary-foreground: 24 24 27;
+  --secondary-hover: 228 228 231;
+  --accent: 240 240 242;
+  --accent-foreground: 24 24 27;
+  --destructive: 185 28 28;
+  --destructive-foreground: 253 253 253;
+  --agent: 79 70 229;
+  --agent-soft: 238 242 255;
+  --agent-foreground: 55 48 163;
+  --agent-border: 199 210 254;
+  --success: 21 128 61;
+  --success-soft: 240 253 244;
+  --warning: 180 83 9;
+  --warning-soft: 255 251 235;
+  --danger: 185 28 28;
+  --danger-soft: 254 242 242;
+  --info: 3 105 161;
+  --info-soft: 240 249 255;
+  --brand: 7 11 30;
+  --brand-foreground: 247 247 248;
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.05), 0 0 0 1px rgba(24, 24, 27, 0.05);
+  --shadow-raised: 0 1px 2px rgba(24, 24, 27, 0.04), 0 8px 24px -8px rgba(24, 24, 27, 0.14), 0 0 0 1px rgba(24, 24, 27, 0.05);
+  color-scheme: light;
+}
+.dark {
+  --background: 9 9 11;
+  --foreground: 247 247 248;
+  --card: 24 24 27;
+  --card-foreground: 247 247 248;
+  --popover: 24 24 27;
+  --popover-foreground: 247 247 248;
+  --muted: 39 39 42;
+  --muted-foreground: 161 161 170;
+  --border: 39 39 42;
+  --input: 113 113 122;
+  --ring: 165 180 252;
+  --primary: 247 247 248;
+  --primary-foreground: 24 24 27;
+  --primary-hover: 212 212 216;
+  --secondary: 39 39 42;
+  --secondary-foreground: 247 247 248;
+  --secondary-hover: 63 63 70;
+  --accent: 39 39 42;
+  --accent-foreground: 247 247 248;
+  --destructive: 248 113 113;
+  --destructive-foreground: 9 9 11;
+  --agent: 165 180 252;
+  --agent-soft: 30 27 75;
+  --agent-foreground: 199 210 254;
+  --agent-border: 55 48 163;
+  --success: 74 222 128;
+  --success-soft: 31 52 41;
+  --warning: 251 191 36;
+  --warning-soft: 56 47 28;
+  --danger: 248 113 113;
+  --danger-soft: 55 36 39;
+  --info: 56 189 248;
+  --info-soft: 28 47 58;
+  --brand: 247 247 248;
+  --brand-foreground: 7 11 30;
+  --shadow-card: 0 0 0 1px #27272a;
+  --shadow-raised: 0 0 0 1px #27272a, 0 16px 40px -16px rgba(0, 0, 0, 0.56);
+  color-scheme: dark;
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --control-sm: 36px;
+  --control-md: 44px;
+  --control-lg: 48px;
+  --control-target: 44px;
+  --duration-fast: 200ms;
+  --duration-base: 250ms;
+  --duration-slow: 300ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --font-family-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-family-display: var(--font-newsreader), Newsreader, "Iowan Old Style", Georgia, serif;
+  --font-family-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-synthesis: none;
+}
+.text-display { font-family: var(--font-family-display); font-size: 40px; line-height: 44px; font-weight: 400; letter-spacing: -0.02em; }
+.text-metric { font-family: var(--font-family-display); font-size: 40px; line-height: 44px; font-weight: 400; letter-spacing: -0.02em; }
+.text-section-title { font-family: var(--font-family-display); font-size: 22px; line-height: 28px; font-weight: 500; letter-spacing: -0.01em; }
+.text-title { font-family: var(--font-family-sans); font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.012em; }
+.text-heading { font-family: var(--font-family-sans); font-size: 16px; line-height: 24px; font-weight: 600; letter-spacing: -0.006em; }
+.text-subheading { font-family: var(--font-family-sans); font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: 0em; }
+.text-body { font-family: var(--font-family-sans); font-size: 14px; line-height: 20px; font-weight: 400; letter-spacing: 0em; }
+.text-small { font-family: var(--font-family-sans); font-size: 13px; line-height: 20px; font-weight: 400; letter-spacing: 0em; }
+.text-caption { font-family: var(--font-family-sans); font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: 0em; }
+.text-label { font-family: var(--font-family-sans); font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.02em; }
+.text-metric { font-variant-numeric: lining-nums tabular-nums; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

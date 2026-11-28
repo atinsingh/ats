@@ -13,7 +13,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Post-MVP placeholder. */
+/** A scheduled interview for one application. Tenant-scoped; see InterviewService. */
 @Entity
 @Access(AccessType.FIELD)
 @Table(name = "interviews")
@@ -78,7 +78,77 @@ public class InterviewEntity extends AuditableEntity {
 
     public InterviewEntity() {}
 
+    public InterviewEntity(
+            UUID id,
+            UUID tenantId,
+            UUID applicationId,
+            UUID jobId,
+            InterviewType type,
+            Instant scheduledStart,
+            Instant scheduledEnd) {
+        this.id = id;
+        this.tenantId = tenantId;
+        this.applicationId = applicationId;
+        this.jobId = jobId;
+        this.type = type;
+        this.scheduledStart = scheduledStart;
+        this.scheduledEnd = scheduledEnd;
+    }
+
     public UUID getId() {
         return id;
+    }
+
+    public UUID getTenantId() {
+        return tenantId;
+    }
+
+    public UUID getApplicationId() {
+        return applicationId;
+    }
+
+    public UUID getJobId() {
+        return jobId;
+    }
+
+    public InterviewType getType() {
+        return type;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getMeetingUrl() {
+        return meetingUrl;
+    }
+
+    public void setMeetingUrl(String meetingUrl) {
+        this.meetingUrl = meetingUrl;
+    }
+
+    public Instant getScheduledStart() {
+        return scheduledStart;
+    }
+
+    public Instant getScheduledEnd() {
+        return scheduledEnd;
+    }
+
+    public InterviewStatus getStatus() {
+        return status;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void cancel(String reason) {
+        this.status = InterviewStatus.CANCELLED;
+        this.cancellationReason = reason;
     }
 }

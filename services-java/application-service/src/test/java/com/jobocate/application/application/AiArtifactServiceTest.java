@@ -36,6 +36,9 @@ class AiArtifactServiceTest extends IntegrationTestBase {
     @BeforeEach
     void setTenant() {
         TenantContext.setCurrentTenant(TENANT_A);
+        // The database is shared by every test class in the run; start from an empty outbox.
+        outbox.deleteAll();
+        artifacts.deleteAll();
     }
 
     @AfterEach

@@ -36,8 +36,9 @@ public class JobController {
     @GetMapping
     public List<JobResponse> list(
             @RequestParam(name = "limit", defaultValue = "25") int limit,
-            @RequestParam(name = "offset", defaultValue = "0") int offset) {
-        return jobs.listPublishedJobs(limit, offset).stream().map(JobResponse::from).toList();
+            @RequestParam(name = "offset", defaultValue = "0") int offset,
+            @RequestParam(name = "status", required = false) JobStatus status) {
+        return jobs.listJobs(status, limit, offset).stream().map(JobResponse::from).toList();
     }
 
     @GetMapping("/{id}")

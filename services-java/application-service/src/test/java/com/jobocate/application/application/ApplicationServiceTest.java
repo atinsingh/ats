@@ -14,6 +14,7 @@ import com.jobocate.application.infrastructure.persistence.ApplicationTimelineEn
 import com.jobocate.application.infrastructure.persistence.ApplicationTimelineJpaRepository;
 import com.jobocate.application.infrastructure.persistence.EventOutboxEntity;
 import com.jobocate.application.infrastructure.persistence.EventOutboxJpaRepository;
+import com.jobocate.application.infrastructure.persistence.SubmittalJpaRepository;
 import com.jobocate.platform.tenant.TenantContext;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,7 @@ class ApplicationServiceTest extends IntegrationTestBase {
     @Autowired ApplicationJpaRepository applications;
     @Autowired ApplicationTimelineJpaRepository timelineRepo;
     @Autowired EventOutboxJpaRepository outboxRepo;
+    @Autowired SubmittalJpaRepository submittalRepo;
 
     private static final UUID TENANT_A = UUID.fromString("00000000-0000-0000-0000-00000000000a");
     private static final UUID TENANT_B = UUID.fromString("00000000-0000-0000-0000-00000000000b");
@@ -35,6 +37,8 @@ class ApplicationServiceTest extends IntegrationTestBase {
     @BeforeEach
     void setTenant() {
         TenantContext.setCurrentTenant(TENANT_A);
+        // The database is shared by every test class in the run; start from an empty outbox.
+        outboxRepo.deleteAll();
     }
 
     @AfterEach
@@ -42,6 +46,8 @@ class ApplicationServiceTest extends IntegrationTestBase {
         TenantContext.clear();
         outboxRepo.deleteAll();
         timelineRepo.deleteAll();
+        // Submittals reference applications, so they go first.
+        submittalRepo.deleteAll();
         applications.deleteAll();
     }
 

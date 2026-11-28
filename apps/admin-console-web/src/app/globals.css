@@ -1,10 +1,8 @@
+@import '@jobocate/ui/styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  color-scheme: light;
-}
 
 html,
 body {

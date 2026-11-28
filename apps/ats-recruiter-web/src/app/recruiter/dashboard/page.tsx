@@ -1,9 +1,5 @@
 import Link from 'next/link';
-import {
-  JobocateHttpError,
-  createJobocateClient,
-  type Job,
-} from '@jobocate/api-sdk';
+import { JobocateHttpError, createJobocateClient, type Job } from '@jobocate/api-sdk';
 import {
   EmptyState,
   ErrorBanner,
@@ -20,10 +16,7 @@ export default async function DashboardPage() {
   if (!cfg.jobServiceUrl) {
     return (
       <RecruiterShell title="Dashboard">
-        <MissingConfig
-          envName="NEXT_PUBLIC_JOB_SERVICE_URL"
-          example="http://localhost:8082"
-        />
+        <MissingConfig envName="NEXT_PUBLIC_JOB_SERVICE_URL" example="http://localhost:8082" />
       </RecruiterShell>
     );
   }
@@ -49,16 +42,10 @@ export default async function DashboardPage() {
   const recent = jobs.slice(0, 5);
 
   return (
-    <RecruiterShell
-      title="Dashboard"
-      subtitle="Hiring across your tenant — at a glance."
-    >
+    <RecruiterShell title="Dashboard" subtitle="Hiring across your tenant — at a glance.">
       {error ? <ErrorBanner message={error} /> : null}
 
-      <section
-        aria-label="Hiring summary"
-        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-      >
+      <section aria-label="Hiring summary" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Published" value={counts.PUBLISHED ?? 0} />
         <StatCard label="Draft" value={counts.DRAFT ?? 0} />
         <StatCard label="Closed" value={counts.CLOSED ?? 0} />
@@ -74,7 +61,7 @@ export default async function DashboardPage() {
               cta={
                 <Link
                   href="/recruiter/jobs/new"
-                  className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                   + New job
                 </Link>
@@ -87,11 +74,11 @@ export default async function DashboardPage() {
                   <div>
                     <Link
                       href={`/recruiter/jobs/${j.id}`}
-                      className="font-medium text-slate-900 hover:text-slate-700"
+                      className="font-medium text-foreground hover:text-foreground"
                     >
                       {j.title}
                     </Link>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       {j.location ?? composeLocation(j)}
                       {j.employmentType ? ` · ${j.employmentType}` : ''}
                     </p>
@@ -104,18 +91,18 @@ export default async function DashboardPage() {
         </Card>
 
         <Card title="Tips">
-          <ul className="space-y-3 text-sm text-slate-700">
+          <ul className="space-y-3 text-sm text-foreground">
             <li>
-              <span className="font-medium">Publish thoughtfully:</span> jobs need
-              a title, description, and employment type before publishing.
+              <span className="font-medium">Publish thoughtfully:</span> jobs need a title,
+              description, and employment type before publishing.
             </li>
             <li>
-              <span className="font-medium">Pipelines:</span> assign each job
-              to a pipeline so candidates flow through your stages.
+              <span className="font-medium">Pipelines:</span> assign each job to a pipeline so
+              candidates flow through your stages.
             </li>
             <li>
-              <span className="font-medium">Close, don&apos;t delete:</span> closing
-              keeps history while removing the role from public search.
+              <span className="font-medium">Close, don&apos;t delete:</span> closing keeps history
+              while removing the role from public search.
             </li>
           </ul>
         </Card>
@@ -133,8 +120,8 @@ function countByStatus(jobs: Job[]): Record<string, number> {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-2 text-3xl font-semibold">{value}</p>
     </div>
   );
@@ -142,8 +129,8 @@ function StatCard({ label, value }: { label: string; value: number }) {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-foreground">{title}</h2>
       <div className="mt-4">{children}</div>
     </div>
   );
